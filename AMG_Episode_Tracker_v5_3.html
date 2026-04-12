@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AMG — Episode of Care Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0F2340;--navy-mid:#1B3A6B;--navy-light:#2A4F8A;
+  --gold:#C9A84C;--gold-light:#E8C96A;
+  --white:#FFFFFF;--off:#F7F9FC;--g1:#EEF1F8;--g2:#D1D7E8;--g3:#8A93B0;
+  --text:#1A1E2E;--muted:#6B7494;
+  --green:#1A6B3C;--gbg:#E6F5EE;
+  --amber:#7B5200;--abg:#FFF8E6;
+  --red:#8B1A1A;--rbg:#FDEAEA;
+  --xblue:#13B5EA;
+  --ap:#7B2D8B;--apbg:#F5E6FB;
+  --ar:#1A6B3C;--arbg:#E6F5EE;
+  --r:10px;--sh:0 2px 16px rgba(15,35,64,.10);--shl:0 8px 40px rgba(15,35,64,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;
+  background-image:radial-gradient(ellipse at 15% 0%,rgba(201,168,76,.07) 0%,transparent 55%),
+  radial-gradient(ellipse at 85% 100%,rgba(27,58,107,.5) 0%,transparent 55%)}
+
+/* ═══════════════════════════════════════════════
+   PIN SCREEN
+═══════════════════════════════════════════════ */
+#pinScreen {
+  position:fixed;inset:0;background:var(--navy);
+  background-image:radial-gradient(ellipse at 20% 10%,rgba(201,168,76,.08) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 90%,rgba(27,58,107,.6) 0%,transparent 60%);
+  display:flex;align-items:center;justify-content:center;z-index:1000;
+}
+.pin-box {
+  text-align:center;padding:48px 40px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(201,168,76,.2);
+  border-radius:20px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 24px 80px rgba(0,0,0,.4);
+  max-width:360px;width:90%;
+}
+.pin-logo {
+  width:52px;height:52px;border-radius:13px;margin:0 auto 18px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--navy);
+}
+.pin-title {
+  font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;
+  color:var(--gold-light);margin-bottom:4px;
+}
+.pin-sub {font-size:12px;color:var(--g3);margin-bottom:28px;line-height:1.5}
+.pin-dots {
+  display:flex;justify-content:center;gap:14px;margin-bottom:24px;
+}
+.pin-dot {
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(201,168,76,.4);
+  background:transparent;transition:all .2s;
+}
+.pin-dot.filled {background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,.5)}
+.pin-dot.error {background:var(--red);border-color:var(--red);box-shadow:0 0 10px rgba(139,26,26,.5)}
+.pin-keypad {
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  max-width:240px;margin:0 auto;
+}
+.pin-key {
+  aspect-ratio:1;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.06);color:var(--white);
+  font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.pin-key:hover {background:rgba(255,255,255,.12);border-color:rgba(201,168,76,.4)}
+.pin-key:active {background:rgba(201,168,76,.2);transform:scale(.94)}
+.pin-key.zero {grid-column:2}
+.pin-key.del {grid-column:3;font-size:16px;color:var(--g3)}
+.pin-key.del:hover {color:var(--red)}
+.pin-error {
+  font-size:12px;color:var(--red);margin-top:14px;height:18px;
+  transition:opacity .2s;
+}
+.pin-hint {font-size:11px;color:var(--g3);margin-top:16px}
+
+/* ═══════════════════════════════════════════════
+   APP SHELL (hidden until login)
+═══════════════════════════════════════════════ */
+#appShell {display:none}
+
+/* TOPBAR */
+.topbar{background:rgba(10,22,44,.97);backdrop-filter:blur(16px);border-bottom:1px solid rgba(201,168,76,.18);
+  height:56px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200}
+.tb-brand{display:flex;align-items:center;gap:11px}
+.tb-logo{width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;
+  font-size:16px;font-weight:700;color:var(--navy)}
+.tb-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold-light)}
+.tb-sub{font-size:10px;color:var(--g3);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--g3);
+  font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tb-btn:hover{border-color:var(--gold);color:var(--gold-light)}
+
+/* ROLE BADGE */
+.role-badge{
+  padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.rb-admin{background:rgba(201,168,76,.2);color:var(--gold-light);border:1px solid rgba(201,168,76,.4)}
+.rb-staff{background:rgba(138,147,176,.15);color:var(--g3);border:1px solid rgba(138,147,176,.3)}
+
+.dot{width:7px;height:7px;border-radius:50%;background:var(--g3);flex-shrink:0}
+.dot.on{background:#4CAF50;box-shadow:0 0 6px rgba(76,175,80,.7)}
+
+/* SYNC BAR */
+.sync-bar{height:3px;background:transparent;position:sticky;top:56px;z-index:199}
+.sync-bar.syncing{background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:syncP 1.2s infinite}
+.sync-bar.err-bar{background:var(--red)}
+@keyframes syncP{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* TABS */
+.tabs{display:flex;background:rgba(10,22,44,.6);border-bottom:1px solid rgba(255,255,255,.06);padding:0 18px;overflow-x:auto}
+.tab{padding:11px 15px;font-size:12px;font-weight:500;cursor:pointer;color:var(--g3);
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--gold-light)}
+.tab.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+
+/* VIEWS */
+.view{display:none}.view.active{display:block}
+.main{max-width:1340px;margin:0 auto;padding:20px 16px 60px}
+
+/* WEEK HEADER */
+.wh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.wl{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold-light)}
+.wd{font-size:11px;color:var(--g3);margin-top:2px}
+.wc{display:flex;align-items:center;gap:8px}
+.btn-wk{width:32px;height:32px;border-radius:7px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(201,168,76,.2);color:var(--gold-light);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.btn-wk:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+.wsb{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.wsb-open{background:rgba(201,168,76,.15);color:var(--gold-light);border:1px solid rgba(201,168,76,.3)}
+.wsb-locked{background:rgba(76,175,80,.15);color:#81C784;border:1px solid rgba(76,175,80,.3)}
+
+/* STAFF SUMMARY STRIP — AP only, no AR/margin */
+.ss-staff{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+/* ADMIN SUMMARY STRIP */
+.ss-admin{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+.sc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:var(--r);padding:12px 13px}
+.sc-l{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--g3);margin-bottom:4px}
+.sc-v{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold-light);line-height:1}
+.sc-s{font-size:9px;color:var(--g3);margin-top:3px}
+.sc-ap .sc-v{color:#C97BE8}.sc-ar .sc-v{color:#81C784}.sc-mg .sc-v{color:var(--gold)}
+
+/* LOOP BAR (admin only) */
+.loop-bar{display:flex;align-items:stretch;gap:0;margin-bottom:16px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden}
+.ls{flex:1;padding:10px 14px;border-right:1px solid rgba(255,255,255,.06)}
+.ls:last-child{border-right:none}
+.ls-num{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--g3);margin-bottom:2px}
+.ls-t{font-size:12px;font-weight:600;color:var(--white)}
+.ls-s{font-size:10px;color:var(--g3);margin-top:1px}
+.ls.ap-s{border-bottom:2px solid var(--ap)}
+.ls.ar-s{border-bottom:2px solid var(--ar)}
+.ls.xr-s{border-bottom:2px solid var(--xblue)}
+.la{font-size:16px;color:var(--gold);padding:0 6px;display:flex;align-items:center;flex-shrink:0}
+
+/* GRID */
+.tgrid-admin{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
+.tgrid-staff{display:grid;grid-template-columns:1fr;gap:16px}
+
+/* CARD */
+.card{background:var(--white);border-radius:14px;box-shadow:var(--shl);overflow:hidden}
+.ch{background:var(--navy);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold)}
+.ch-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold-light)}
+.ch-s{font-size:10px;color:var(--g3)}
+.cb{padding:16px 18px}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:9px}
+.fgr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fgr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],input[type=time],textarea{
+  font-family:'DM Sans',sans-serif;font-size:13px;border:1.5px solid var(--g2);border-radius:7px;
+  padding:8px 10px;color:var(--text);background:var(--off);transition:border-color .2s;outline:none;width:100%}
+select:focus,input:focus,textarea:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(27,58,107,.07);background:white}
+textarea{resize:vertical;min-height:48px}
+.pfx{position:relative}.pfx input{padding-left:22px}
+.pfx::before{content:'$';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)}
+
+/* RATE BADGE */
+.rbadge{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:600;margin-bottom:9px}
+.rb-biz{background:var(--gbg);color:var(--green)}
+.rb-after{background:var(--abg);color:var(--amber)}
+.rb-wknd{background:var(--apbg);color:var(--ap)}
+.rb-ph{background:var(--rbg);color:var(--red)}
+
+/* STAFF INFO BANNER */
+.staff-info{background:linear-gradient(135deg,rgba(27,58,107,.1),rgba(15,35,64,.05));
+  border:1px solid rgba(27,58,107,.2);border-radius:10px;padding:12px 15px;
+  margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.6}
+.staff-info strong{color:var(--navy)}
+
+/* BUTTONS */
+.btn-p{width:100%;padding:10px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:var(--gold-light);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,35,64,.28)}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-s{padding:8px 14px;border:1.5px solid var(--g2);border-radius:7px;background:white;
+  color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
+.btn-s:hover{border-color:var(--navy-mid);color:var(--navy)}
+.btn-xap{width:100%;padding:10px;border:none;border-radius:8px;margin-top:10px;
+  background:linear-gradient(135deg,#7B2D8B,#4A1060);color:#F0C6FF;
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-xap:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 16px rgba(123,45,139,.35)}
+.btn-xap:disabled{opacity:.4;cursor:not-allowed}
+.btn-xar{width:100%;padding:10px;border:none;border-radius:8px;margin-top:10px;
+  background:linear-gradient(135deg,var(--xblue),#0D91C2);color:white;
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  box-shadow:0 4px 14px rgba(19,181,234,.25)}
+.btn-xar:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(19,181,234,.4)}
+.btn-xar:disabled{opacity:.4;cursor:not-allowed}
+
+/* FILTER + TABLE */
+.fr{display:flex;gap:5px;margin:11px 0 9px;flex-wrap:wrap}
+.chip{padding:3px 11px;border-radius:20px;font-size:10px;font-weight:600;
+  border:1.5px solid var(--g2);background:var(--off);color:var(--muted);cursor:pointer;transition:all .15s}
+.chip.on{background:var(--navy);color:var(--gold-light);border-color:var(--navy)}
+.chip:hover:not(.on){border-color:var(--navy-mid);color:var(--navy)}
+.etw{overflow-x:auto}
+
+/* ADMIN TABLE — shows AP, AR, margin */
+.et-admin{width:100%;border-collapse:collapse;font-size:11px;min-width:800px}
+/* STAFF TABLE — shows AP only, no AR/margin */
+.et-staff{width:100%;border-collapse:collapse;font-size:11px;min-width:520px}
+.et-admin thead tr,.et-staff thead tr{background:var(--navy)}
+.et-admin thead th,.et-staff thead th{padding:8px 10px;text-align:left;font-size:9px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.09em;color:var(--gold-light);white-space:nowrap}
+.et-admin tbody tr,.et-staff tbody tr{border-bottom:1px solid var(--g1);transition:background .12s}
+.et-admin tbody tr:hover,.et-staff tbody tr:hover{background:var(--off)}
+.et-admin td,.et-staff td{padding:8px 10px;vertical-align:middle}
+.et-admin td.m,.et-staff td.m{color:var(--muted);font-size:10px}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;white-space:nowrap}
+.b-pend{background:var(--abg);color:var(--amber)}
+.b-appushed{background:var(--apbg);color:var(--ap)}
+.b-pushed{background:var(--gbg);color:var(--green)}
+.b-locked{background:var(--g1);color:var(--g3)}
+.btn-del,.btn-edt{background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:4px;font-size:12px;transition:all .15s}
+.btn-del{color:var(--g3)}.btn-del:hover{color:var(--red);background:var(--rbg)}
+.btn-edt{color:var(--g3)}.btn-edt:hover{color:var(--navy-mid);background:var(--g1)}
+.empty-st{text-align:center;padding:30px;color:var(--muted)}
+.empty-st .ei{font-size:30px;margin-bottom:7px}
+
+/* AP/AR CARDS */
+.rp{display:flex;flex-direction:column;gap:13px}
+.ap-card{background:var(--white);border-radius:14px;box-shadow:var(--shl);overflow:hidden}
+.ap-hdr{background:linear-gradient(135deg,#4A1060,#7B2D8B);padding:13px 17px;border-bottom:2px solid #C97BE8}
+.ap-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#F0C6FF}
+.ap-b{padding:14px 17px}
+.ar-card{background:var(--white);border-radius:14px;box-shadow:var(--shl);overflow:hidden}
+.ar-hdr{background:linear-gradient(135deg,#0D4A26,#1A6B3C);padding:13px 17px;border-bottom:2px solid #4CAF50}
+.ar-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#A5D6B0}
+.ar-b{padding:14px 17px}
+.bill-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--g1);font-size:12px}
+.bill-row:last-child{border-bottom:none}
+.br-name{font-weight:500}.br-sub{font-size:10px;color:var(--muted)}
+.br-ap{font-weight:600;color:var(--ap)}.br-ar{font-weight:600;color:var(--ar)}
+.total-r{display:flex;justify-content:space-between;padding:9px 0 0;border-top:2px solid var(--g2);font-weight:700;font-size:13px;margin-top:3px}
+.markup-row{display:flex;align-items:center;gap:8px;margin:8px 0;padding:9px;background:var(--off);border-radius:8px;border:1px solid var(--g2)}
+.markup-row label{margin:0;white-space:nowrap;font-size:10px}
+.markup-row input{width:65px;padding:5px 8px;font-size:12px}
+.mup-res{font-size:11px;color:var(--green);font-weight:600;margin-left:auto;white-space:nowrap}
+.xlog{margin-top:9px;font-size:10px;max-height:65px;overflow-y:auto;background:var(--g1);border-radius:6px;padding:5px 9px;display:none}
+.xl{padding:1px 0;color:var(--muted)}.xl.ok{color:var(--green)}.xl.err{color:var(--red)}
+
+/* SETTINGS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.scard{background:var(--white);border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.scard.full{grid-column:1/-1}
+.shdr{background:var(--navy);padding:12px 17px;border-bottom:2px solid var(--gold)}
+.shdr-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold-light)}
+.shdr-s{font-size:10px;color:var(--g3);margin-top:1px}
+.sbody{padding:15px 17px}
+.el-item{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;border-radius:7px;font-size:12px;transition:background .15s}
+.el-item:hover{background:var(--off)}
+.el-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;font-size:12px;color:var(--g3);transition:all .15s}
+.el-btn:hover{background:var(--g1);color:var(--navy)}
+.el-btn.del:hover{background:var(--rbg);color:var(--red)}
+.add-row{display:flex;gap:7px;margin-top:9px}
+.add-row input{flex:1}
+.btn-add{padding:8px 13px;border:none;border-radius:7px;background:var(--navy);color:var(--gold-light);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-add:hover{background:var(--navy-mid)}
+.ftable{width:100%;border-collapse:collapse;font-size:12px}
+.ftable th{text-align:left;padding:6px 10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--g1)}
+.ftable td{padding:6px 10px;border-bottom:1px solid var(--g1)}
+.ftable tr:last-child td{border-bottom:none}
+.fee-inp{width:75px;text-align:right}
+.fam-sec{margin-bottom:14px}
+.fam-sec-t{font-size:11px;font-weight:600;color:var(--navy-mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--g2);display:flex;align-items:center;justify-content:space-between}
+.btn-rfam{font-size:10px;background:none;border:1px solid var(--g2);border-radius:4px;padding:2px 7px;cursor:pointer;color:var(--muted);transition:all .15s}
+.btn-rfam:hover{border-color:var(--navy-mid);color:var(--navy)}
+
+/* PIN MANAGEMENT in settings */
+.pin-mgmt{background:var(--off);border-radius:10px;padding:14px;border:1px solid var(--g2)}
+.pin-mgmt-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pin-mgmt-row:last-child{margin-bottom:0}
+.pin-lbl{font-size:12px;font-weight:500;color:var(--text)}
+.pin-lbl-sub{font-size:10px;color:var(--muted)}
+.pin-inp-row{display:flex;gap:8px;align-items:center}
+.pin-inp-row input{width:100px;font-size:14px;letter-spacing:.2em;text-align:center}
+.btn-pin-save{padding:7px 14px;border:none;border-radius:7px;background:var(--navy);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-pin-save:hover{background:var(--navy-mid)}
+
+/* HISTORY */
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.whcard{background:var(--white);border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.whch{background:var(--navy);padding:11px 15px;border-bottom:2px solid var(--gold);display:flex;align-items:center;justify-content:space-between}
+.whcb{padding:10px 15px}
+.whep{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--g1);font-size:11px}
+.whep:last-child{border-bottom:none}
+
+/* GS STEPS */
+.gs-step{display:flex;gap:11px;padding:8px 0;border-bottom:1px solid var(--g1)}
+.gs-step:last-child{border-bottom:none}
+.gsn{width:21px;height:21px;border-radius:50%;flex-shrink:0;background:var(--navy);color:var(--gold-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px}
+.gst{font-size:12px;color:var(--text);line-height:1.5}
+.gst code{background:var(--g1);padding:1px 5px;border-radius:4px;font-size:11px}
+.gst a{color:var(--xblue);text-decoration:none}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(8,18,36,.78);backdrop-filter:blur(5px);z-index:500;align-items:center;justify-content:center;padding:20px}
+.mo.open{display:flex}
+.modal{background:white;border-radius:16px;padding:22px;max-width:500px;width:100%;box-shadow:var(--shl);animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:none}}
+.mt{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:3px}
+.ms{font-size:12px;color:var(--muted);margin-bottom:14px}
+.ma{display:flex;gap:9px;margin-top:16px}
+.btn-mc{flex:1;padding:10px;background:var(--g1);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;color:var(--muted)}
+.btn-mc:hover{background:var(--g2)}
+.btn-map{flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#7B2D8B,#4A1060);color:#F0C6FF;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-mar{flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--xblue),#0D91C2);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.pb{background:var(--off);border-radius:8px;padding:11px 13px;font-size:12px;margin-bottom:3px}
+.pb-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--g2)}
+.pb-row:last-child{border-bottom:none}
+.pb-tot{display:flex;justify-content:space-between;padding:7px 0 0;font-weight:700;font-size:13px;border-top:2px solid var(--g2);margin-top:3px}
+.pb-ap{color:var(--ap)}.pb-ar{color:var(--ar)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:18px;background:var(--navy);color:var(--gold-light);
+  padding:10px 15px;border-radius:10px;font-size:12px;font-weight:500;box-shadow:var(--shl);
+  border-left:3px solid var(--gold);transform:translateX(130%);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:1001;max-width:300px}
+.toast.show{transform:none}
+.toast.err{border-left-color:#E05555}.toast.ok{border-left-color:#4CAF50}
+
+@media(max-width:960px){.tgrid-admin{grid-template-columns:1fr}.ss-admin{grid-template-columns:repeat(3,1fr)}.sg{grid-template-columns:1fr}.hgrid{grid-template-columns:1fr}.loop-bar{flex-wrap:wrap}.la{display:none}}
+@media(max-width:560px){.ss-admin,.ss-staff{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     PIN SCREEN
+═══════════════════════════════════════════ -->
+<div id="pinScreen">
+  <div class="pin-box">
+    <div class="pin-logo">A</div>
+    <div class="pin-title">Arise Medical Group</div>
+    <div class="pin-sub">Episode of Care Tracker<br>Enter your PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-keypad">
+      <div class="pin-key" onclick="pinPress('1')">1</div>
+      <div class="pin-key" onclick="pinPress('2')">2</div>
+      <div class="pin-key" onclick="pinPress('3')">3</div>
+      <div class="pin-key" onclick="pinPress('4')">4</div>
+      <div class="pin-key" onclick="pinPress('5')">5</div>
+      <div class="pin-key" onclick="pinPress('6')">6</div>
+      <div class="pin-key" onclick="pinPress('7')">7</div>
+      <div class="pin-key" onclick="pinPress('8')">8</div>
+      <div class="pin-key" onclick="pinPress('9')">9</div>
+      <div class="pin-key zero" onclick="pinPress('0')">0</div>
+      <div class="pin-key del" onclick="pinDel()">⌫</div>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="pin-hint">Staff or admin PIN required</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════ -->
+<div id="appShell">
+
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-logo">A</div>
+    <div>
+      <div class="tb-name">Arise Medical Group</div>
+      <div class="tb-sub">Episode of Care</div>
+    </div>
+  </div>
+  <div class="tb-right">
+    <div class="role-badge" id="roleBadge">—</div>
+    <div class="tb-btn" id="gsBadge"><div class="dot" id="gsDot"></div><span id="gsTxt">Sheets</span></div>
+    <div class="tb-btn" id="xeroBadge" style="display:none"><div class="dot" id="xDot"></div><span id="xTxt">Xero</span></div>
+    <div class="tb-btn" onclick="syncNow()">↻</div>
+    <div class="tb-btn" onclick="lockApp()" style="color:var(--red);border-color:rgba(139,26,26,.3)">🔒 Lock</div>
+  </div>
+</div>
+<div class="sync-bar" id="syncBar"></div>
+
+<!-- TABS — rendered dynamically based on role -->
+<div class="tabs" id="tabBar"></div>
+
+<!-- VIEWS -->
+<div id="viewContainer"></div>
+
+</div><!-- /appShell -->
+
+<!-- AP MODAL -->
+<div class="mo" id="apModal">
+  <div class="modal">
+    <div class="mt">Push AP Bill to Xero</div>
+    <div class="ms" id="apModalSub">—</div>
+    <div class="pb" id="apPreview"></div>
+    <div style="margin-top:9px;font-size:11px;color:var(--muted);background:var(--off);border-radius:7px;padding:9px 11px;line-height:1.6">
+      Creates a <strong>Bill (ACCPAY)</strong> in Xero from AMG to <span id="apModalProv">—</span>.<br>
+      Reference: <code id="apModalRef">—</code> · Payable within 14 days.
+    </div>
+    <div class="ma">
+      <button class="btn-mc" onclick="closeModal('apModal')">Cancel</button>
+      <button class="btn-map" onclick="execAPPush()">↑ Push to Xero Bills</button>
+    </div>
+  </div>
+</div>
+
+<!-- AR MODAL -->
+<div class="mo" id="arModal">
+  <div class="modal">
+    <div class="mt">Push AR Sales Invoices to Xero</div>
+    <div class="ms" id="arModalSub">—</div>
+    <div class="pb" id="arPreview"></div>
+    <div style="margin-top:9px;font-size:11px;color:var(--muted);background:var(--off);border-radius:7px;padding:9px 11px;line-height:1.6">
+      Creates <strong>draft Sales Invoices (ACCREC)</strong> in Xero — one per family group.<br>
+      Your bookkeeper (<span id="arModalBK">—</span>) reviews and sends from Xero.
+    </div>
+    <div class="ma">
+      <button class="btn-mc" onclick="closeModal('arModal')">Cancel</button>
+      <button class="btn-mar" onclick="execARPush()">↑ Push to Xero Invoices</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// PIN & AUTH
+// ═══════════════════════════════════════════════════════════════════════
+// DEFAULT PINS — will be overridden by Google Sheets settings
+const DEFAULT_ADMIN_PIN = '1234';
+const DEFAULT_STAFF_PIN = '0000';
+
+let currentPin   = '';
+let currentRole  = null; // 'admin' | 'staff'
+let pinLocked    = false;
+
+function pinPress(digit) {
+  if (pinLocked || currentPin.length >= 4) return;
+  currentPin += digit;
+  updatePinDots();
+  if (currentPin.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinDel() {
+  if (pinLocked) return;
+  currentPin = currentPin.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+}
+
+function updatePinDots(state = '') {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.className = 'pin-dot';
+    if (state === 'error') { dot.classList.add('error'); return; }
+    if (i < currentPin.length) dot.classList.add('filled');
+  }
+}
+
+function checkPin() {
+  const adminPin = DB.settings?.pin_admin || DEFAULT_ADMIN_PIN;
+  const staffPin = DB.settings?.pin_staff || DEFAULT_STAFF_PIN;
+
+  if (currentPin === adminPin) {
+    currentRole = 'admin';
+    loginSuccess();
+  } else if (currentPin === staffPin) {
+    currentRole = 'staff';
+    loginSuccess();
+  } else {
+    pinError();
+  }
+}
+
+function loginSuccess() {
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('appShell').style.display  = 'block';
+  document.getElementById('roleBadge').textContent   = currentRole === 'admin' ? '⚡ Admin' : '👤 Staff';
+  document.getElementById('roleBadge').className     = 'role-badge ' + (currentRole === 'admin' ? 'rb-admin' : 'rb-staff');
+  if (currentRole === 'admin') document.getElementById('xeroBadge').style.display = 'flex';
+  buildUI();
+}
+
+function pinError() {
+  pinLocked = true;
+  for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot error';
+  document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
+  setTimeout(() => {
+    currentPin = '';
+    pinLocked = false;
+    for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot';
+    document.getElementById('pinError').textContent = '';
+  }, 1400);
+}
+
+function lockApp() {
+  currentRole = null;
+  currentPin  = '';
+  document.getElementById('appShell').style.display  = 'none';
+  document.getElementById('pinScreen').style.display = 'flex';
+  updatePinDots();
+  clearInterval(window._syncInterval);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// UI BUILDER — renders correct tabs + views based on role
+// ═══════════════════════════════════════════════════════════════════════
+function buildUI() {
+  const tabBar = document.getElementById('tabBar');
+  const vc     = document.getElementById('viewContainer');
+  tabBar.innerHTML = '';
+  vc.innerHTML     = '';
+
+  const tabs = currentRole === 'admin'
+    ? [
+        { id: 'tracker',  label: '📋 Weekly Tracker' },
+        { id: 'billing',  label: '💳 AP → AR Billing' },
+        { id: 'history',  label: '📅 History' },
+        { id: 'settings', label: '⚙ Settings' },
+      ]
+    : [
+        { id: 'tracker', label: '📋 Weekly Tracker' },
+      ];
+
+  tabs.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (i === 0 ? ' active' : '');
+    el.setAttribute('data-tab', t.id);
+    el.textContent = t.label;
+    el.onclick = () => switchTab(t.id);
+    tabBar.appendChild(el);
+
+    const view = document.createElement('div');
+    view.className = 'view' + (i === 0 ? ' active' : '');
+    view.id = 'view-' + t.id;
+    vc.appendChild(view);
+  });
+
+  // Render initial view
+  renderTrackerView();
+  syncNow();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE & STORAGE
+// ═══════════════════════════════════════════════════════════════════════
+let GS_URL   = localStorage.getItem('amg5_gsurl') || '';
+let gsOnline = false, xeroOn = false;
+let wkOff = 0, editId = null, activeF = 'all';
+
+let DB = {
+  episodes: [], families: {}, clinicians: [], types: {}, settings: {}, locked: [],
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ═══════════════════════════════════════════════════════════════════════
+async function gsGet(params) {
+  if (!GS_URL) return null;
+  setSyncing(true);
+  try {
+    const res  = await fetch(GS_URL + '?' + new URLSearchParams(params));
+    const data = await res.json();
+    setSyncing(false);
+    if (data.error) { console.error(data.error); return null; }
+    return data;
+  } catch(e) { setSyncing(false, true); return null; }
+}
+
+async function gsPost(body) {
+  if (!GS_URL) return null;
+  setSyncing(true);
+  try {
+    const res  = await fetch(GS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), mode:'cors' });
+    const data = await res.json();
+    setSyncing(false);
+    if (data.error) { toast('Error: ' + data.error, 'err'); return null; }
+    return data;
+  } catch(e) { setSyncing(false, true); toast('Sync error', 'err'); return null; }
+}
+
+function setSyncing(on, err=false) {
+  const b = document.getElementById('syncBar');
+  if (!b) return;
+  if (err) { b.className = 'sync-bar err-bar'; setTimeout(()=>b.className='sync-bar',2000); return; }
+  b.className = 'sync-bar' + (on ? ' syncing' : '');
+}
+
+async function syncNow() {
+  if (!GS_URL) return;
+  const data = await gsGet({ action: 'getAll' });
+  if (!data) return;
+  DB.episodes   = (data.episodes   || []).map(normaliseEp);
+  DB.families   = data.families    || {};
+  DB.clinicians = data.clinicians  || [];
+  DB.types      = data.types       || {};
+  DB.settings   = data.settings    || {};
+  DB.locked     = data.locked      || [];
+  setGSOnline(true);
+  if (DB.settings?.xero_access_token) setXeroOn(true);
+  renderAll();
+  clearInterval(window._syncInterval);
+  window._syncInterval = setInterval(syncNow, 30000);
+}
+
+function normaliseEp(e) {
+  return {
+    id:e.id||'', fam:e.family||'', mem:e.member||'', date:e.date||'',
+    time:e.time||'09:00', clin:e.clinician||'', type:e.type||'',
+    dur:parseInt(e.duration)||0, ap:parseFloat(e.ap_fee)||0, ar:parseFloat(e.ar_fee)||0,
+    notes:e.notes||'', rate:e.rate_label||'', status:e.status||'pending',
+  };
+}
+
+async function connectGS(url) {
+  if (!url) return;
+  GS_URL = url;
+  localStorage.setItem('amg5_gsurl', url);
+  await syncNow();
+}
+
+async function initSheets() {
+  toast('Initialising sheets…');
+  const res = await gsPost({ action: 'initSheets' });
+  if (res?.ok) { toast('Sheets initialised ✓', 'ok'); await syncNow(); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEEK HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function getWkStart(off=wkOff){const d=new Date(),day=d.getDay();d.setDate(d.getDate()-day+(day===0?-6:1)+off*7);d.setHours(0,0,0,0);return d}
+function wkKey(off=wkOff){return getWkStart(off).toISOString().slice(0,10)}
+function inWeek(ds,off=wkOff){const ws=getWkStart(off),we=new Date(ws);we.setDate(we.getDate()+6);const d=new Date(ds+'T00:00:00');return d>=ws&&d<=we}
+function fmt(d){return d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}
+function wkStartOfDate(ds){const d=new Date(ds+'T00:00:00'),day=d.getDay();d.setDate(d.getDate()-day+(day===0?-6:1));d.setHours(0,0,0,0);return d.toISOString().slice(0,10)}
+function isLocked(off=wkOff){return DB.locked.includes(wkKey(off))}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RATE CALCULATOR
+// ═══════════════════════════════════════════════════════════════════════
+function getRate(dateStr, timeStr='09:00'){
+  const s=DB.settings,ph=((s.public_holidays||'')).split(',').map(x=>x.trim());
+  const rates={biz:parseFloat(s.rate_biz)||500,after:parseFloat(s.rate_after)||1000,wknd:parseFloat(s.rate_wknd)||1000,ph:parseFloat(s.rate_ph)||1000};
+  if(ph.includes(dateStr)) return{label:'Public Holiday',rate:rates.ph,cls:'rb-ph',icon:'🏖️'};
+  const d=new Date(dateStr+'T'+timeStr+':00'),dow=d.getDay();
+  const[h,m]=timeStr.split(':').map(Number),mins=h*60+m;
+  if(dow===6||dow===0) return{label:'Weekend',rate:rates.wknd,cls:'rb-wknd',icon:'🌙'};
+  if(dow===5&&mins>=17*60) return{label:'Weekend (Fri AH)',rate:rates.wknd,cls:'rb-wknd',icon:'🌙'};
+  if(dow===1&&mins<8*60+30) return{label:'Weekend (Mon early)',rate:rates.wknd,cls:'rb-wknd',icon:'🌙'};
+  if(mins>=17*60||mins<8*60+30) return{label:'After Hours',rate:rates.after,cls:'rb-after',icon:'🌙'};
+  return{label:'Business Hours',rate:rates.biz,cls:'rb-biz',icon:'☀️'};
+}
+
+function autoRate(){
+  const date=document.getElementById('fDate')?.value;
+  const time=document.getElementById('fTime')?.value||'09:00';
+  if(!date)return;
+  const r=getRate(date,time);
+  const b=document.getElementById('rateBadge');
+  if(!b)return;
+  b.style.display='flex';b.className='rbadge '+r.cls;
+  document.getElementById('rIcon').textContent=r.icon;
+  document.getElementById('rTxt').textContent=r.label;
+  document.getElementById('rAmt').textContent='$'+r.rate.toLocaleString('en-AU');
+  document.getElementById('fAP').value=r.rate;
+  if(currentRole==='admin') calcAR();
+}
+
+function calcAR(){
+  if(currentRole!=='admin') return;
+  const ap=parseFloat(document.getElementById('fAP')?.value)||0;
+  const pct=parseFloat(document.getElementById('markupPct')?.value)||0;
+  const arEl=document.getElementById('fAR');
+  if(arEl) arEl.value=(ap*(1+pct/100)).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TAB SWITCH
+// ═══════════════════════════════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const vEl=document.getElementById('view-'+tab);
+  const tEl=document.querySelector(`.tab[data-tab="${tab}"]`);
+  if(vEl) vEl.classList.add('active');
+  if(tEl) tEl.classList.add('active');
+  if(tab==='tracker')  renderTrackerView();
+  if(tab==='billing')  renderBillingView();
+  if(tab==='history')  renderHistoryView();
+  if(tab==='settings') renderSettingsView();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TRACKER VIEW — role-aware HTML injection
+// ═══════════════════════════════════════════════════════════════════════
+function renderTrackerView(){
+  const el=document.getElementById('view-tracker');
+  if(!el) return;
+  const isAdmin=currentRole==='admin';
+  el.innerHTML=`
+  <div class="main">
+    ${!GS_URL?`<div style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:12px;color:var(--g3)">
+      <strong style="color:var(--gold-light)">Connect Google Sheets</strong> in Settings to enable live shared data.
+    </div>`:''}
+    <div class="wh">
+      <div><div class="wl" id="wkLabel">—</div><div class="wd" id="wkDates">—</div></div>
+      <div class="wc">
+        <span class="wsb" id="wkBadge">—</span>
+        <button class="btn-wk" onclick="shiftWeek(-1)">‹</button>
+        <button class="btn-wk" onclick="shiftWeek(1)">›</button>
+      </div>
+    </div>
+
+    ${isAdmin?`
+    <div class="loop-bar">
+      <div class="ls ap-s"><div class="ls-num">Step 1 — AP</div><div class="ls-t">Provider bills AMG</div><div class="ls-s">Flametree → AMG</div></div>
+      <div class="la">→</div>
+      <div class="ls ar-s"><div class="ls-num">Step 2 — AR</div><div class="ls-t">AMG invoices family</div><div class="ls-s">AMG → Client</div></div>
+      <div class="la">→</div>
+      <div class="ls xr-s"><div class="ls-num">Step 3 — Xero</div><div class="ls-t">Auto-push both</div><div class="ls-s">AP → Bills · AR → Invoices</div></div>
+    </div>
+    <div class="ss-admin">
+      <div class="sc"><div class="sc-l">Episodes</div><div class="sc-v" id="sEps">—</div><div class="sc-s">this week</div></div>
+      <div class="sc sc-ap"><div class="sc-l">AP (Provider Cost)</div><div class="sc-v" id="sAP">—</div><div class="sc-s">excl. GST</div></div>
+      <div class="sc sc-ar"><div class="sc-l">AR (Client Invoice)</div><div class="sc-v" id="sAR">—</div><div class="sc-s">excl. GST</div></div>
+      <div class="sc sc-mg"><div class="sc-l">AMG Margin</div><div class="sc-v" id="sMg">—</div><div class="sc-s">AR minus AP</div></div>
+      <div class="sc"><div class="sc-l">GST on AR</div><div class="sc-v" id="sGST">—</div><div class="sc-s">10%</div></div>
+      <div class="sc"><div class="sc-l">Pushed to Xero</div><div class="sc-v" id="sPushed">—</div><div class="sc-s">this week</div></div>
+    </div>`:`
+    <div class="ss-staff">
+      <div class="sc"><div class="sc-l">Episodes This Week</div><div class="sc-v" id="sEps">—</div><div class="sc-s">logged</div></div>
+      <div class="sc sc-ap"><div class="sc-l">My Provider Fee (AP)</div><div class="sc-v" id="sAP">—</div><div class="sc-s">excl. GST</div></div>
+      <div class="sc"><div class="sc-l">Status</div><div class="sc-v" id="sPushed" style="font-size:16px">—</div><div class="sc-s">pushed to billing</div></div>
+    </div>`}
+
+    <div class="${isAdmin?'tgrid-admin':'tgrid-staff'}">
+      <div class="card">
+        <div class="ch"><div class="ch-t">Log Episode of Care</div><div class="ch-s" id="lockNote"></div></div>
+        <div class="cb">
+          ${!isAdmin?`<div class="staff-info">
+            <strong>Staff view</strong> — log your episode details below. Your provider rate is auto-applied from the SLA schedule based on date and time.
+            Client fees and billing are managed by admin only.
+          </div>`:''}
+          <div class="rbadge" id="rateBadge" style="display:none"><span id="rIcon">☀️</span><span id="rTxt">—</span><span id="rAmt" style="margin-left:auto;font-size:13px">—</span></div>
+          <div class="fgr" style="margin-bottom:9px">
+            <div class="fg"><label>Family Group</label><select id="fFam" onchange="onFamChange()"><option value="">— Select —</option></select></div>
+            <div class="fg"><label>Member</label><select id="fMem"><option value="">— Select family first —</option></select></div>
+          </div>
+          <div class="fgr" style="margin-bottom:9px">
+            <div class="fg"><label>Date (AWST)</label><input type="date" id="fDate" onchange="autoRate()"></div>
+            <div class="fg"><label>Time (AWST)</label><input type="time" id="fTime" value="09:00" onchange="autoRate()"></div>
+          </div>
+          <div class="fgr" style="margin-bottom:9px">
+            <div class="fg"><label>Clinician / Provider</label><select id="fClin"><option value="">— Select —</option></select></div>
+            <div class="fg"><label>Episode Type</label><select id="fType" onchange="onTypeChange()"><option value="">— Select —</option></select></div>
+          </div>
+          ${isAdmin?`
+          <div class="fgr3" style="margin-bottom:9px">
+            <div class="fg"><label>Duration (mins)</label><input type="number" id="fDur" placeholder="30" min="5" max="480"></div>
+            <div class="fg"><label>Provider Fee — AP ($)</label><div class="pfx"><input type="number" id="fAP" placeholder="500" min="0" step="0.01" oninput="calcAR()"></div></div>
+            <div class="fg"><label>Client Fee — AR ($)</label><div class="pfx"><input type="number" id="fAR" placeholder="0" min="0" step="0.01"></div></div>
+          </div>`:`
+          <div class="fgr" style="margin-bottom:9px">
+            <div class="fg"><label>Duration (mins)</label><input type="number" id="fDur" placeholder="30" min="5" max="480"></div>
+            <div class="fg"><label>My Rate (AP $)</label><div class="pfx"><input type="number" id="fAP" placeholder="500" min="0" step="0.01" readonly style="background:#f0f4fa;color:var(--muted)"></div></div>
+          </div>`}
+          <div class="fg" style="margin-bottom:13px"><label>Clinical Notes (optional)</label><textarea id="fNotes" placeholder="Brief clinical summary…"></textarea></div>
+          <button class="btn-p" id="submitBtn" onclick="submitEp()"><span id="subIcon">＋</span> <span id="subLbl">Log Episode</span></button>
+          <button class="btn-s" id="cancelBtn" onclick="cancelEdit()" style="width:100%;margin-top:7px;display:none">✕ Cancel Edit</button>
+
+          <div class="fr">
+            <div class="chip on" onclick="setF('all',this)">All</div>
+            <div class="chip" onclick="setF('pending',this)">Pending</div>
+            <div class="chip" onclick="setF('pushed',this)">Pushed</div>
+          </div>
+          <div class="etw">
+            <table class="${isAdmin?'et-admin':'et-staff'}">
+              <thead><tr>
+                <th>Date / Time</th><th>Family</th><th>Member</th><th>Type</th><th>Rate</th>
+                <th>AP ($)</th>
+                ${isAdmin?'<th>AR ($)</th><th>Margin</th>':''}
+                <th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="epTbody"></tbody>
+            </table>
+            <div class="empty-st" id="emSt"><div class="ei">🩺</div><p>No episodes this week.</p></div>
+          </div>
+        </div>
+      </div>
+
+      ${isAdmin?`
+      <div class="rp">
+        <div class="ap-card">
+          <div class="ap-hdr"><div class="ap-t">Accounts Payable</div><div style="font-size:10px;color:#C97BE8;margin-top:1px">Flametree Medical → AMG</div></div>
+          <div class="ap-b">
+            <div id="apList"></div>
+            <div class="total-r pb-ap" id="apTot" style="display:none"><span>Total excl. GST</span><span id="apTotAmt">$0</span></div>
+            <button class="btn-xap" id="apBtn" onclick="openAPModal()" disabled>↑ Push AP Bill to Xero</button>
+            <div class="xlog" id="apLog"></div>
+          </div>
+        </div>
+        <div class="ar-card">
+          <div class="ar-hdr"><div class="ar-t">Accounts Receivable</div><div style="font-size:10px;color:#A5D6B0;margin-top:1px">AMG → Client Family</div></div>
+          <div class="ar-b">
+            <div class="markup-row">
+              <label>AMG Markup %</label>
+              <input type="number" id="markupPct" value="0" min="0" step="1" oninput="recalcAR()">
+              <span class="mup-res" id="mupRes">+ $0 margin</span>
+            </div>
+            <div id="arList"></div>
+            <div class="total-r pb-ar" id="arTot" style="display:none"><span>Total excl. GST</span><span id="arTotAmt">$0</span></div>
+            <button class="btn-xar" id="arBtn" onclick="openARModal()" disabled>↑ Push AR Invoices to Xero</button>
+            <div class="xlog" id="arLog"></div>
+          </div>
+        </div>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  initForm();
+  updateWkHeader();
+  renderTable();
+  renderSummary();
+  if(isAdmin) renderAPAR();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FORM HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function initForm(){
+  const fsel=document.getElementById('fFam');
+  if(fsel){fsel.innerHTML='<option value="">— Select —</option>';Object.keys(DB.families||{}).forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f;fsel.appendChild(o)})}
+  const csel=document.getElementById('fClin');
+  if(csel){csel.innerHTML='<option value="">— Select —</option>';(DB.clinicians||[]).forEach(c=>{const o=document.createElement('option');o.value=o.textContent=c;csel.appendChild(o)})}
+  const tsel=document.getElementById('fType');
+  if(tsel){tsel.innerHTML='<option value="">— Select —</option>';Object.keys(DB.types||{}).forEach(t=>{const o=document.createElement('option');o.value=o.textContent=t;tsel.appendChild(o)})}
+  const fd=document.getElementById('fDate');
+  if(fd) fd.value=new Date().toISOString().slice(0,10);
+  autoRate();
+}
+function onFamChange(){
+  const fam=document.getElementById('fFam')?.value;
+  const sel=document.getElementById('fMem');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Select —</option>';
+  (DB.families[fam]||[]).forEach(m=>{const o=document.createElement('option');o.value=o.textContent=m;sel.appendChild(o)});
+}
+function onTypeChange(){
+  const t=document.getElementById('fType')?.value;
+  if(DB.types[t]!==undefined){const ap=document.getElementById('fAP');if(ap)ap.value=DB.types[t];calcAR()}
+}
+function recalcAR(){calcAR();renderSummary();renderAPAR()}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EPISODE CRUD
+// ═══════════════════════════════════════════════════════════════════════
+async function submitEp(){
+  if(isLocked()){toast('Week is locked.','err');return}
+  const fam=document.getElementById('fFam')?.value,mem=document.getElementById('fMem')?.value,
+        date=document.getElementById('fDate')?.value,time=document.getElementById('fTime')?.value||'09:00',
+        clin=document.getElementById('fClin')?.value,type=document.getElementById('fType')?.value,
+        dur=parseInt(document.getElementById('fDur')?.value)||0,
+        ap=parseFloat(document.getElementById('fAP')?.value)||0,
+        ar=currentRole==='admin'?(parseFloat(document.getElementById('fAR')?.value)||0):0,
+        notes=document.getElementById('fNotes')?.value.trim()||'';
+  if(!fam||!mem||!date||!clin||!type){toast('Fill in all required fields.','err');return}
+  const rate=getRate(date,time);
+  const ep={id:editId||Date.now().toString(36)+Math.random().toString(36).slice(2),
+    family:fam,member:mem,date,time,clinician:clin,type,duration:dur,
+    ap_fee:ap,ar_fee:ar,notes,rate_label:rate.label,status:'pending'};
+  if(editId){
+    await gsPost({action:'updateEpisode',id:editId,data:ep});
+    const i=DB.episodes.findIndex(e=>e.id===editId);
+    if(i>-1) DB.episodes[i]=normaliseEp(ep);
+    cancelEdit();toast('Episode updated.','ok');
+  } else {
+    await gsPost({action:'saveEpisode',data:ep});
+    DB.episodes.unshift(normaliseEp(ep));
+    resetForm();toast('Episode logged — '+mem,'ok');
+  }
+  editId=null;renderAll();
+}
+function startEdit(id){
+  if(currentRole==='staff'){
+    const ep=DB.episodes.find(e=>e.id===id);if(!ep)return;
+    editId=id;
+    document.getElementById('fFam').value=ep.fam;onFamChange();
+    setTimeout(()=>{if(document.getElementById('fMem'))document.getElementById('fMem').value=ep.mem},50);
+    document.getElementById('fDate').value=ep.date;document.getElementById('fTime').value=ep.time||'09:00';
+    document.getElementById('fClin').value=ep.clin;document.getElementById('fType').value=ep.type;
+    document.getElementById('fDur').value=ep.dur||'';
+    document.getElementById('fNotes').value=ep.notes||'';
+    autoRate();
+  } else {
+    const ep=DB.episodes.find(e=>e.id===id);if(!ep)return;
+    editId=id;
+    document.getElementById('fFam').value=ep.fam;onFamChange();
+    setTimeout(()=>{if(document.getElementById('fMem'))document.getElementById('fMem').value=ep.mem},50);
+    document.getElementById('fDate').value=ep.date;document.getElementById('fTime').value=ep.time||'09:00';
+    document.getElementById('fClin').value=ep.clin;document.getElementById('fType').value=ep.type;
+    document.getElementById('fDur').value=ep.dur||'';document.getElementById('fAP').value=ep.ap;
+    document.getElementById('fAR').value=ep.ar;document.getElementById('fNotes').value=ep.notes||'';
+    autoRate();
+  }
+  document.getElementById('subIcon').textContent='✓';document.getElementById('subLbl').textContent='Save Changes';
+  document.getElementById('cancelBtn').style.display='block';
+}
+function cancelEdit(){
+  editId=null;resetForm();
+  document.getElementById('subIcon').textContent='＋';document.getElementById('subLbl').textContent='Log Episode';
+  document.getElementById('cancelBtn').style.display='none';
+}
+function resetForm(){
+  ['fFam','fClin','fType'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  const fm=document.getElementById('fMem');if(fm)fm.innerHTML='<option value="">— Select family first —</option>';
+  const fd=document.getElementById('fDate');if(fd)fd.value=new Date().toISOString().slice(0,10);
+  const ft=document.getElementById('fTime');if(ft)ft.value='09:00';
+  const fdr=document.getElementById('fDur');if(fdr)fdr.value='';
+  const fn=document.getElementById('fNotes');if(fn)fn.value='';
+  autoRate();
+}
+async function deleteEp(id){
+  if(isLocked()){toast('Week locked.','err');return}
+  await gsPost({action:'deleteEpisode',id});
+  DB.episodes=DB.episodes.filter(e=>e.id!==id);
+  renderAll();toast('Episode removed.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER TABLE
+// ═══════════════════════════════════════════════════════════════════════
+function setF(f,el){activeF=f;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderTable()}
+
+function renderTable(){
+  const tbody=document.getElementById('epTbody'),em=document.getElementById('emSt');
+  if(!tbody) return;
+  tbody.innerHTML='';
+  let eps=DB.episodes.filter(e=>inWeek(e.date));
+  if(activeF!=='all') eps=eps.filter(e=>e.status===activeF);
+  if(!eps.length){if(em)em.style.display='block';return}
+  if(em)em.style.display='none';
+  const locked=isLocked(),isAdmin=currentRole==='admin';
+  eps.forEach(ep=>{
+    const margin=(ep.ar||0)-(ep.ap||0);
+    const bCls=ep.status==='pushed'?'b-pushed':ep.status==='ap_pushed'?'b-appushed':locked?'b-locked':'b-pend';
+    const bTxt=ep.status==='pushed'?'Pushed':ep.status==='ap_pushed'?'AP Pushed':locked?'Locked':'Pending';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="m">${ep.date}<br><span style="font-size:9px">${ep.time||''} ${ep.rate?'· '+ep.rate:''}</span></td>
+      <td><strong>${ep.fam}</strong></td><td>${ep.mem}</td><td>${ep.type}</td>
+      <td class="m">${ep.rate||'—'}</td>
+      <td style="font-weight:600;color:var(--ap)">$${(ep.ap||0).toLocaleString('en-AU',{minimumFractionDigits:2})}</td>
+      ${isAdmin?`
+      <td style="font-weight:600;color:var(--ar)">$${(ep.ar||0).toLocaleString('en-AU',{minimumFractionDigits:2})}</td>
+      <td style="font-weight:600;color:${margin>=0?'var(--green)':'var(--red)'}">$${margin.toLocaleString('en-AU',{minimumFractionDigits:2})}</td>`:''}
+      <td><span class="badge ${bCls}">${bTxt}</span></td>
+      <td style="white-space:nowrap">
+        ${!locked&&ep.status==='pending'?`<button class="btn-edt" onclick="startEdit('${ep.id}')">✎</button>`:''}
+        ${isAdmin&&!locked&&ep.status==='pending'?`<button class="btn-del" onclick="deleteEp('${ep.id}')">✕</button>`:''}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SUMMARY + AP/AR
+// ═══════════════════════════════════════════════════════════════════════
+function renderSummary(){
+  const eps=DB.episodes.filter(e=>inWeek(e.date));
+  const ap=eps.reduce((s,e)=>s+(e.ap||0),0);
+  const ar=eps.reduce((s,e)=>s+(e.ar||0),0);
+  const pushed=eps.filter(e=>e.status==='pushed').length;
+  const setV=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+  setV('sEps',eps.length);
+  setV('sAP','$'+ap.toLocaleString('en-AU',{minimumFractionDigits:0}));
+  if(currentRole==='admin'){
+    setV('sAR','$'+ar.toLocaleString('en-AU',{minimumFractionDigits:0}));
+    setV('sMg','$'+(ar-ap).toLocaleString('en-AU',{minimumFractionDigits:0}));
+    setV('sGST','$'+(ar*0.1).toLocaleString('en-AU',{minimumFractionDigits:0}));
+    setV('sPushed',pushed);
+  } else {
+    setV('sPushed',pushed+' ep'+( pushed!==1?'s':''));
+  }
+}
+
+function renderAPAR(){
+  if(currentRole!=='admin') return;
+  const eps=DB.episodes.filter(e=>inWeek(e.date)&&e.status==='pending');
+  const pct=parseFloat(document.getElementById('markupPct')?.value)||0;
+  const apListEl=document.getElementById('apList'),arListEl=document.getElementById('arList');
+  const apTotEl=document.getElementById('apTot'),arTotEl=document.getElementById('arTot');
+  const apBtn=document.getElementById('apBtn'),arBtn=document.getElementById('arBtn');
+  if(!eps.length){
+    if(apListEl)apListEl.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0">No pending episodes</div>';
+    if(arListEl)arListEl.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0">No pending episodes</div>';
+    if(apTotEl)apTotEl.style.display='none';if(arTotEl)arTotEl.style.display='none';
+    if(apBtn)apBtn.disabled=true;if(arBtn)arBtn.disabled=true;
+    const mr=document.getElementById('mupRes');if(mr)mr.textContent='+ $0 margin';return;
+  }
+  const byClin={},byFam={};
+  eps.forEach(e=>{
+    const ar=parseFloat((e.ap*(1+pct/100)).toFixed(2));
+    if(!byClin[e.clin])byClin[e.clin]={ap:0,cnt:0};byClin[e.clin].ap+=e.ap;byClin[e.clin].cnt++;
+    if(!byFam[e.fam])byFam[e.fam]={ar:0,ap:0,cnt:0};byFam[e.fam].ap+=e.ap;byFam[e.fam].ar+=ar;byFam[e.fam].cnt++;
+  });
+  const apTotal=eps.reduce((s,e)=>s+(e.ap||0),0);
+  const arTotal=Object.values(byFam).reduce((s,d)=>s+d.ar,0);
+  if(apListEl)apListEl.innerHTML=Object.entries(byClin).map(([c,d])=>`<div class="bill-row"><div><div class="br-name">${c}</div><div class="br-sub">${d.cnt} ep${d.cnt!==1?'s':''}</div></div><div class="br-ap">$${d.ap.toLocaleString('en-AU',{minimumFractionDigits:2})}</div></div>`).join('');
+  if(apTotEl){apTotEl.style.display='flex';document.getElementById('apTotAmt').textContent='$'+apTotal.toLocaleString('en-AU',{minimumFractionDigits:2})}
+  if(arListEl)arListEl.innerHTML=Object.entries(byFam).map(([f,d])=>`<div class="bill-row"><div><div class="br-name">${f}</div><div class="br-sub">${d.cnt} ep${d.cnt!==1?'s':''} · GST $${(d.ar*.1).toFixed(2)}</div></div><div class="br-ar">$${d.ar.toLocaleString('en-AU',{minimumFractionDigits:2})}</div></div>`).join('');
+  if(arTotEl){arTotEl.style.display='flex';document.getElementById('arTotAmt').textContent='$'+arTotal.toLocaleString('en-AU',{minimumFractionDigits:2})}
+  if(apBtn)apBtn.disabled=!xeroOn||!gsOnline;
+  if(arBtn)arBtn.disabled=!xeroOn||!gsOnline;
+  const mr=document.getElementById('mupRes');if(mr)mr.textContent='+ $'+(arTotal-apTotal).toLocaleString('en-AU',{minimumFractionDigits:2})+' margin';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PUSH — AP
+// ═══════════════════════════════════════════════════════════════════════
+function openAPModal(){
+  const eps=DB.episodes.filter(e=>inWeek(e.date)&&e.status==='pending');
+  const s=DB.settings,byClin={};
+  eps.forEach(e=>{if(!byClin[e.clin])byClin[e.clin]=0;byClin[e.clin]+=e.ap||0});
+  const total=eps.reduce((s,e)=>s+(e.ap||0),0);
+  document.getElementById('apModalSub').textContent=`Week of ${fmt(getWkStart())} — ${eps.length} episode${eps.length!==1?'s':''}`;
+  document.getElementById('apModalProv').textContent=s.xero_provider_contact||'Flametree Medical Pty Ltd';
+  document.getElementById('apModalRef').textContent='AMG-AP-'+wkKey();
+  document.getElementById('apPreview').innerHTML=
+    Object.entries(byClin).map(([c,a])=>`<div class="pb-row"><span>${c}</span><span class="pb-ap">$${a.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>`).join('')+
+    `<div class="pb-tot pb-ap"><span>Total excl. GST</span><span>$${total.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+     <div class="pb-tot" style="font-weight:400;font-size:11px;color:var(--muted)"><span>GST 10%</span><span>$${(total*.1).toFixed(2)}</span></div>
+     <div class="pb-tot pb-ap" style="border-top:2px solid var(--g2)"><span>Total incl. GST</span><span>$${(total*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>`;
+  document.getElementById('apModal').classList.add('open');
+}
+async function execAPPush(){
+  closeModal('apModal');
+  const eps=DB.episodes.filter(e=>inWeek(e.date)&&e.status==='pending');
+  if(!eps.length){toast('No pending episodes.','err');return}
+  const logEl=document.getElementById('apLog');if(logEl)logEl.style.display='block';
+  xlog('apLog','Pushing AP bill to Xero via Google Sheets…');
+  const res=await gsPost({action:'pushAPToXero',episodeIds:eps.map(e=>e.id)});
+  if(res?.ok){
+    eps.forEach(ep=>{const i=DB.episodes.findIndex(e=>e.id===ep.id);if(i>-1)DB.episodes[i].status='ap_pushed'});
+    xlog('apLog','✓ AP Bill created in Xero','ok');renderAll();toast('AP Bill pushed ✓','ok');
+  } else {xlog('apLog','✗ '+(res?.error||'Failed'),'err')}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PUSH — AR
+// ═══════════════════════════════════════════════════════════════════════
+function openARModal(){
+  const pct=parseFloat(document.getElementById('markupPct')?.value)||0;
+  const eps=DB.episodes.filter(e=>inWeek(e.date)&&e.status==='pending');
+  const cfg=DB.settings,byFam={};
+  eps.forEach(e=>{const ar=parseFloat((e.ap*(1+pct/100)).toFixed(2));if(!byFam[e.fam])byFam[e.fam]=0;byFam[e.fam]+=ar});
+  const total=Object.values(byFam).reduce((s,v)=>s+v,0);
+  document.getElementById('arModalSub').textContent=`Week of ${fmt(getWkStart())} — ${Object.keys(byFam).length} family group${Object.keys(byFam).length!==1?'s':''}`;
+  document.getElementById('arModalBK').textContent=cfg.xero_bookkeeper||'not set';
+  document.getElementById('arPreview').innerHTML=
+    Object.entries(byFam).map(([f,a])=>`<div class="pb-row"><span>${f} Family</span><span class="pb-ar">$${a.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>`).join('')+
+    `<div class="pb-tot pb-ar"><span>Total excl. GST</span><span>$${total.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+     <div class="pb-tot" style="font-weight:400;font-size:11px;color:var(--muted)"><span>GST 10%</span><span>$${(total*.1).toFixed(2)}</span></div>
+     <div class="pb-tot pb-ar" style="border-top:2px solid var(--g2)"><span>Total incl. GST</span><span>$${(total*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>`;
+  DB.episodes.filter(e=>inWeek(e.date)&&e.status==='pending').forEach(ep=>{ep.ar=parseFloat((ep.ap*(1+pct/100)).toFixed(2))});
+  document.getElementById('arModal').classList.add('open');
+}
+async function execARPush(){
+  closeModal('arModal');
+  const logEl=document.getElementById('arLog');if(logEl)logEl.style.display='block';
+  xlog('arLog','Pushing AR invoices to Xero…');
+  const res=await gsPost({action:'pushARToXero',weekKey:wkKey()});
+  if(res?.ok){
+    DB.locked.push(wkKey());await syncNow();
+    xlog('arLog','✓ Draft invoices created in Xero','ok');
+    renderAll();toast('AR Invoices pushed ✓ — week locked','ok');
+  } else {xlog('arLog','✗ '+(res?.error||'Failed'),'err')}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BILLING / HISTORY / SETTINGS VIEWS
+// ═══════════════════════════════════════════════════════════════════════
+function renderBillingView(){
+  const el=document.getElementById('view-billing');if(!el)return;
+  const weeks=[...new Set(DB.episodes.map(e=>wkStartOfDate(e.date)))].sort((a,b)=>b.localeCompare(a));
+  el.innerHTML=`<div class="main">
+    <div style="margin-bottom:16px"><div class="wl">AP → AR Billing Review</div><div style="font-size:11px;color:var(--g3);margin-top:2px">Review AP bills and AR invoices before Xero push</div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="billingWkSel" onchange="renderBillingContent()" style="max-width:280px">
+        <option value="">— Select week —</option>
+        ${weeks.map(w=>{const d=new Date(w+'T00:00:00'),we=new Date(d);we.setDate(we.getDate()+6);return`<option value="${w}">w/c ${fmt(d)} → ${fmt(we)}</option>`}).join('')}
+      </select>
+      <button class="btn-p" style="width:auto;padding:8px 18px" onclick="execAPPush();execARPush()">↑ Push Both AP + AR</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="billingContent">
+      <div style="color:var(--g3);font-size:13px;text-align:center;padding:40px;grid-column:1/-1">Select a week above.</div>
+    </div>
+  </div>`;
+}
+
+function renderBillingContent(){
+  const sw=document.getElementById('billingWkSel')?.value;if(!sw)return;
+  const wEps=DB.episodes.filter(e=>wkStartOfDate(e.date)===sw);
+  const byClin={},byFam={};
+  wEps.forEach(e=>{
+    if(!byClin[e.clin])byClin[e.clin]={ap:0,cnt:0};byClin[e.clin].ap+=e.ap||0;byClin[e.clin].cnt++;
+    if(!byFam[e.fam])byFam[e.fam]={ar:0,ap:0,cnt:0};byFam[e.fam].ap+=e.ap||0;byFam[e.fam].ar+=e.ar||0;byFam[e.fam].cnt++;
+  });
+  const tAP=wEps.reduce((s,e)=>s+(e.ap||0),0),tAR=wEps.reduce((s,e)=>s+(e.ar||0),0);
+  document.getElementById('billingContent').innerHTML=`
+    <div class="ap-card">
+      <div class="ap-hdr"><div class="ap-t">AP Bill — Provider Cost</div></div>
+      <div class="ap-b">
+        ${Object.entries(byClin).map(([c,d])=>`<div class="bill-row"><div><div class="br-name">${c}</div><div class="br-sub">${d.cnt} ep${d.cnt!==1?'s':''}</div></div><div class="br-ap">$${d.ap.toLocaleString('en-AU',{minimumFractionDigits:2})}</div></div>`).join('')}
+        <div class="total-r pb-ap"><span>Total excl. GST</span><span>$${tAP.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px"><span>Total incl. GST</span><span>$${(tAP*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+      </div>
+    </div>
+    <div class="ar-card">
+      <div class="ar-hdr"><div class="ar-t">AR Invoices — Client Billing</div></div>
+      <div class="ar-b">
+        ${Object.entries(byFam).map(([f,d])=>`<div class="bill-row"><div><div class="br-name">${f}</div><div class="br-sub">${d.cnt} ep${d.cnt!==1?'s':''}</div></div><div class="br-ar">$${d.ar.toLocaleString('en-AU',{minimumFractionDigits:2})}</div></div>`).join('')}
+        <div class="total-r pb-ar"><span>Total excl. GST</span><span>$${tAR.toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px"><span>Total incl. GST</span><span>$${(tAR*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+        <div style="margin-top:10px;padding:8px 10px;background:var(--off);border-radius:7px;font-size:11px;color:var(--green);font-weight:600;display:flex;justify-content:space-between"><span>AMG Margin</span><span>$${(tAR-tAP).toLocaleString('en-AU',{minimumFractionDigits:2})}</span></div>
+      </div>
+    </div>`;
+}
+
+function renderHistoryView(){
+  const el=document.getElementById('view-history');if(!el)return;
+  const wm={};
+  DB.episodes.forEach(e=>{const w=wkStartOfDate(e.date);if(!wm[w])wm[w]=[];wm[w].push(e)});
+  const weeks=Object.keys(wm).sort((a,b)=>b.localeCompare(a));
+  el.innerHTML=`<div class="main">
+    <div style="margin-bottom:16px"><div class="wl">Week History</div><div style="font-size:11px;color:var(--g3);margin-top:2px">Full AP/AR audit trail</div></div>
+    <div class="hgrid">
+      ${weeks.length?weeks.map(w=>{
+        const eps=wm[w],locked=DB.locked.includes(w);
+        const ap=eps.reduce((s,e)=>s+(e.ap||0),0),ar=eps.reduce((s,e)=>s+(e.ar||0),0);
+        const byFam={};eps.forEach(e=>{if(!byFam[e.fam])byFam[e.fam]={ap:0,ar:0,cnt:0};byFam[e.fam].ap+=e.ap||0;byFam[e.fam].ar+=e.ar||0;byFam[e.fam].cnt++});
+        const d=new Date(w+'T00:00:00'),de=new Date(d);de.setDate(de.getDate()+6);
+        return`<div class="whcard">
+          <div class="whch">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--gold-light);font-weight:600">w/c ${fmt(d)}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="text-align:right;font-size:11px"><div style="color:var(--ap);font-weight:600">AP $${ap.toLocaleString('en-AU',{minimumFractionDigits:0})}</div><div style="color:var(--ar);font-weight:600">AR $${ar.toLocaleString('en-AU',{minimumFractionDigits:0})}</div></div>
+              ${locked?'<span class="badge b-pushed">Pushed</span>':'<span class="badge b-pend">Open</span>'}
+            </div>
+          </div>
+          <div class="whcb">
+            ${Object.entries(byFam).map(([f,d])=>`<div class="whep"><div style="font-weight:500;font-size:11px">${f} (${d.cnt}ep)</div><div style="font-size:10px;color:var(--muted)"><span style="color:var(--ap)">AP $${d.ap.toFixed(0)}</span> · <span style="color:var(--ar)">AR $${d.ar.toFixed(0)}</span></div></div>`).join('')}
+            <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--g2);display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
+              <span>${eps.length} episodes</span><span style="color:var(--green);font-weight:600">Margin $${(ar-ap).toFixed(0)}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join(''):`<div style="color:var(--g3);font-size:13px;text-align:center;padding:40px;grid-column:1/-1">No history yet.</div>`}
+    </div>
+  </div>`;
+}
+
+function renderSettingsView(){
+  const el=document.getElementById('view-settings');if(!el)return;
+  const s=DB.settings||{};
+  el.innerHTML=`<div class="main">
+    <div style="margin-bottom:16px"><div class="wl">Settings & Roster</div><div style="font-size:11px;color:var(--g3);margin-top:2px">All changes sync to Google Sheets and all users instantly</div></div>
+    <div class="sg">
+
+      <!-- PIN MANAGEMENT -->
+      <div class="scard full">
+        <div class="shdr"><div class="shdr-t">PIN Management</div><div class="shdr-s">Change admin or staff PIN — stored securely in Google Sheets</div></div>
+        <div class="sbody">
+          <div class="pin-mgmt">
+            <div class="pin-mgmt-row">
+              <div><div class="pin-lbl">Admin PIN</div><div class="pin-lbl-sub">Full access — billing, history, settings, Xero</div></div>
+              <div class="pin-inp-row">
+                <input type="password" id="newAdminPin" maxlength="4" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+                <button class="btn-pin-save" onclick="savePin('admin')">Save</button>
+              </div>
+            </div>
+            <div class="pin-mgmt-row">
+              <div><div class="pin-lbl">Staff / Contractor PIN</div><div class="pin-lbl-sub">Weekly tracker only — can log episodes, sees own AP rate</div></div>
+              <div class="pin-inp-row">
+                <input type="password" id="newStaffPin" maxlength="4" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+                <button class="btn-pin-save" onclick="savePin('staff')">Save</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6;background:var(--off);border-radius:7px;padding:9px 11px">
+            PINs are stored in your Google Sheet (Settings tab) — not in the browser. Current admin PIN: <strong>${s.pin_admin?'set (hidden)':'1234 — change immediately'}</strong> · Staff PIN: <strong>${s.pin_staff?'set (hidden)':'0000 — change immediately'}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOGLE SHEETS -->
+      <div class="scard full">
+        <div class="shdr"><div class="shdr-t">Google Sheets Connection</div><div class="shdr-s">Shared live database for all users</div></div>
+        <div class="sbody">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input type="text" id="gsUrlSetting" placeholder="https://script.google.com/macros/s/…/exec" value="${GS_URL}" style="flex:1">
+            <button class="btn-add" onclick="connectGS(document.getElementById('gsUrlSetting').value.trim())">Connect</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="tb-btn"><div class="dot ${gsOnline?'on':''}"></div><span>${gsOnline?'Connected':'Not connected'}</span></div>
+            <button class="btn-s" onclick="syncNow()">↻ Sync Now</button>
+            <button class="btn-s" onclick="initSheets()">⚡ Init Sheets</button>
+          </div>
+          <div class="gs-steps" style="margin-top:14px">
+            <div class="gs-step"><div class="gsn">1</div><div class="gst">Create a Google Sheet named <strong>AMG Episode Tracker</strong> → Extensions → Apps Script → paste <code>AMG_AppsScript.js</code></div></div>
+            <div class="gs-step"><div class="gsn">2</div><div class="gst">Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone → copy URL above</div></div>
+            <div class="gs-step"><div class="gsn">3</div><div class="gst">Click Connect → then ⚡ Init Sheets (first time only) → share the HTML file URL with your team</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLINICIANS -->
+      <div class="scard">
+        <div class="shdr"><div class="shdr-t">Clinicians & Providers</div></div>
+        <div class="sbody">
+          <ul id="clinList" style="list-style:none">${(DB.clinicians||[]).map((c,i)=>`<li class="el-item"><span style="flex:1;font-size:12px">${c}</span><div style="display:flex;gap:4px"><button class="el-btn" onclick="renameClin(${i})">✎</button><button class="el-btn del" onclick="deleteClin(${i})">✕</button></div></li>`).join('')}</ul>
+          <div class="add-row"><input type="text" id="newClin" placeholder="Add clinician…"><button class="btn-add" onclick="addClin()">+ Add</button></div>
+        </div>
+      </div>
+
+      <!-- EPISODE TYPES + FEES -->
+      <div class="scard">
+        <div class="shdr"><div class="shdr-t">Episode Types & Default AP Fees</div></div>
+        <div class="sbody" style="padding:0">
+          <table class="ftable"><thead><tr><th>Type</th><th style="text-align:right">AP ($)</th><th></th></tr></thead>
+          <tbody>${Object.entries(DB.types||{}).map(([t,f])=>`<tr><td>${t}</td><td><input class="fee-inp" type="number" value="${f}" min="0" onchange="updateTypeFee('${t.replace(/'/g,"\\'")}',this.value)"></td><td><button class="el-btn del" onclick="deleteType('${t.replace(/'/g,"\\'")}')">✕</button></td></tr>`).join('')}</tbody></table>
+          <div class="add-row" style="padding:11px 14px 13px"><input type="text" id="newTN" placeholder="Type name…" style="flex:2"><input type="number" id="newTF" placeholder="Fee" style="width:70px"><button class="btn-add" onclick="addType()">+ Add</button></div>
+        </div>
+      </div>
+
+      <!-- SLA RATES -->
+      <div class="scard">
+        <div class="shdr"><div class="shdr-t">SLA Rate Schedule (AWST)</div><div class="shdr-s">Auto-applied from episode date + time</div></div>
+        <div class="sbody" style="padding:0">
+          <table class="ftable"><thead><tr><th>Schedule</th><th>When</th><th style="text-align:right">Fee ex GST</th></tr></thead>
+          <tbody>
+            <tr><td>Business Hours</td><td style="font-size:10px;color:var(--muted)">Mon–Fri 08:30–17:00</td><td><div class="pfx" style="float:right"><input class="fee-inp" type="number" id="r_biz" value="${s.rate_biz||500}" onchange="saveRates()"></div></td></tr>
+            <tr><td>After Hours</td><td style="font-size:10px;color:var(--muted)">Mon–Fri 17:00–08:30</td><td><div class="pfx" style="float:right"><input class="fee-inp" type="number" id="r_after" value="${s.rate_after||1000}" onchange="saveRates()"></div></td></tr>
+            <tr><td>Weekends</td><td style="font-size:10px;color:var(--muted)">Fri 17:00 – Mon 08:30</td><td><div class="pfx" style="float:right"><input class="fee-inp" type="number" id="r_wknd" value="${s.rate_wknd||1000}" onchange="saveRates()"></div></td></tr>
+            <tr><td>Public Holidays</td><td style="font-size:10px;color:var(--muted)">WA PH dates</td><td><div class="pfx" style="float:right"><input class="fee-inp" type="number" id="r_ph" value="${s.rate_ph||1000}" onchange="saveRates()"></div></td></tr>
+          </tbody></table>
+          <div style="padding:9px 13px;font-size:10px;color:var(--muted)">Invoiced within 7 days · Payable within 14 days · AWST</div>
+        </div>
+      </div>
+
+      <!-- PUBLIC HOLIDAYS -->
+      <div class="scard">
+        <div class="shdr"><div class="shdr-t">Public Holidays (WA)</div></div>
+        <div class="sbody">
+          <ul id="phList" style="list-style:none">${((s.public_holidays||'')).split(',').map(x=>x.trim()).filter(Boolean).map((d,i)=>`<li class="el-item"><span style="flex:1;font-size:12px">${d}</span><button class="el-btn del" onclick="deletePH(${i})">✕</button></li>`).join('')}</ul>
+          <div class="add-row"><input type="date" id="newPH"><button class="btn-add" onclick="addPH()">+ Add</button></div>
+        </div>
+      </div>
+
+      <!-- FAMILY GROUPS -->
+      <div class="scard full">
+        <div class="shdr"><div class="shdr-t">Family Groups & Members</div></div>
+        <div class="sbody">
+          <div id="famEditor">${renderFamEditorHTML()}</div>
+          <div class="add-row" style="margin-top:13px;padding-top:13px;border-top:1px solid var(--g2)">
+            <input type="text" id="newFam" placeholder="New family group name…">
+            <button class="btn-add" onclick="addFam()">+ Add Family Group</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- XERO -->
+      <div class="scard full">
+        <div class="shdr"><div class="shdr-t">Xero Integration</div><div class="shdr-s">Credentials stored in Google Sheets — AP → Bills · AR → Invoices</div></div>
+        <div class="sbody">
+          <div style="background:var(--gbg);border:1px solid rgba(26,107,60,.2);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:var(--green);line-height:1.6">
+            ✓ <strong>Secure:</strong> Xero credentials stored in your Google Sheet. Token exchange on Google's servers. Never exposed in browser.
+          </div>
+          <div class="fgr" style="margin-bottom:10px">
+            <div class="fg"><label>Client ID</label><input type="text" id="xCID" placeholder="Xero Client ID" value="${s.xero_client_id||''}" oninput="saveXCfg()"></div>
+            <div class="fg"><label>Client Secret</label><input type="password" id="xCS" placeholder="Stored in Google Sheet" oninput="saveXCfg()"></div>
+          </div>
+          <div class="fgr" style="margin-bottom:10px">
+            <div class="fg"><label>Bookkeeper Email</label><input type="email" id="xBK" placeholder="bookkeeper@example.com" value="${s.xero_bookkeeper||''}" oninput="saveXCfg()"></div>
+            <div class="fg"><label>Provider Contact (in Xero)</label><input type="text" id="xProv" placeholder="Flametree Medical Pty Ltd" value="${s.xero_provider_contact||''}" oninput="saveXCfg()"></div>
+          </div>
+          <div class="fgr" style="margin-bottom:12px">
+            <div class="fg"><label>AP Account Code</label><input type="text" id="xAPAcc" placeholder="e.g. 300" value="${s.xero_ap_account||''}" oninput="saveXCfg()"></div>
+            <div class="fg"><label>AR Account Code</label><input type="text" id="xARAcc" placeholder="e.g. 200" value="${s.xero_ar_account||''}" oninput="saveXCfg()"></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-p" style="flex:1" onclick="connectXero()">Connect to Xero (OAuth)</button>
+            <div class="tb-btn"><div class="dot ${xeroOn?'on':''}"></div><span>${xeroOn?'Connected':'Not connected'}</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function renderFamEditorHTML(){
+  return Object.entries(DB.families||{}).map(([fam,members])=>`
+    <div class="fam-sec">
+      <div class="fam-sec-t"><span>${fam}</span>
+        <div style="display:flex;gap:5px">
+          <button class="btn-rfam" onclick="renameFam('${fam.replace(/'/g,"\\'")}')">Rename</button>
+          <button class="btn-rfam" style="color:var(--red);border-color:#fcd0d0" onclick="deleteFam('${fam.replace(/'/g,"\\'")}')">Remove</button>
+        </div>
+      </div>
+      <ul style="list-style:none">${members.map((m,i)=>`<li class="el-item"><span style="flex:1;font-size:12px">${m}</span><div style="display:flex;gap:4px"><button class="el-btn" onclick="renameMem('${fam.replace(/'/g,"\\'")}',${i})">✎</button><button class="el-btn del" onclick="deleteMem('${fam.replace(/'/g,"\\'")}',${i})">✕</button></div></li>`).join('')}</ul>
+      <div class="add-row" style="margin-top:5px">
+        <input type="text" id="nm-${CSS.escape(fam)}" placeholder="Add member to ${fam}…">
+        <button class="btn-add" onclick="addMem('${fam.replace(/'/g,"\\'")}')">+ Add</button>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS ACTIONS
+// ═══════════════════════════════════════════════════════════════════════
+async function savePin(type){
+  const inp=document.getElementById(type==='admin'?'newAdminPin':'newStaffPin');
+  const v=inp?.value;
+  if(!v||v.length!==4||!/^\d{4}$/.test(v)){toast('PIN must be exactly 4 digits.','err');return}
+  const key=type==='admin'?'pin_admin':'pin_staff';
+  DB.settings[key]=v;
+  await gsPost({action:'saveSettings',data:{[key]:v}});
+  inp.value='';
+  toast(type==='admin'?'Admin PIN updated ✓':'Staff PIN updated ✓','ok');
+  renderSettingsView();
+}
+async function renameClin(i){const v=prompt('Rename:',DB.clinicians[i]);if(!v)return;DB.clinicians[i]=v.trim();await gsPost({action:'saveClinicians',data:DB.clinicians});renderSettingsView();initForm();toast('Saved.','ok')}
+async function deleteClin(i){DB.clinicians.splice(i,1);await gsPost({action:'saveClinicians',data:DB.clinicians});renderSettingsView();initForm()}
+async function addClin(){const inp=document.getElementById('newClin'),v=inp?.value.trim();if(!v)return;DB.clinicians.push(v);await gsPost({action:'saveClinicians',data:DB.clinicians});renderSettingsView();initForm();toast('Added.','ok')}
+async function updateTypeFee(t,v){DB.types[t]=parseFloat(v)||0;await gsPost({action:'saveTypes',data:DB.types})}
+async function deleteType(t){delete DB.types[t];await gsPost({action:'saveTypes',data:DB.types});renderSettingsView();initForm()}
+async function addType(){const n=document.getElementById('newTN')?.value.trim(),f=parseFloat(document.getElementById('newTF')?.value)||0;if(!n)return;DB.types[n]=f;await gsPost({action:'saveTypes',data:DB.types});renderSettingsView();initForm();toast('Added.','ok')}
+async function deletePH(i){const ph=(DB.settings.public_holidays||'').split(',').map(x=>x.trim()).filter(Boolean);ph.splice(i,1);DB.settings.public_holidays=ph.join(',');await gsPost({action:'saveSettings',data:{public_holidays:DB.settings.public_holidays}});renderSettingsView()}
+async function addPH(){const v=document.getElementById('newPH')?.value;if(!v)return;const ph=(DB.settings.public_holidays||'').split(',').map(x=>x.trim()).filter(Boolean);if(!ph.includes(v)){ph.push(v);ph.sort();DB.settings.public_holidays=ph.join(',');await gsPost({action:'saveSettings',data:{public_holidays:DB.settings.public_holidays}})}renderSettingsView()}
+async function saveRates(){const r={rate_biz:document.getElementById('r_biz')?.value||500,rate_after:document.getElementById('r_after')?.value||1000,rate_wknd:document.getElementById('r_wknd')?.value||1000,rate_ph:document.getElementById('r_ph')?.value||1000};Object.assign(DB.settings,r);await gsPost({action:'saveSettings',data:r})}
+async function renameFam(fam){const v=prompt('Rename:',fam);if(!v||v===fam)return;const m=DB.families[fam];delete DB.families[fam];DB.families[v.trim()]=m;DB.episodes=DB.episodes.map(e=>e.fam===fam?{...e,fam:v.trim()}:e);await gsPost({action:'saveFamilies',data:DB.families});renderSettingsView();initForm();toast('Renamed.','ok')}
+async function deleteFam(fam){if(!confirm('Remove "'+fam+'"?'))return;delete DB.families[fam];await gsPost({action:'saveFamilies',data:DB.families});renderSettingsView();initForm()}
+async function renameMem(fam,i){const old=DB.families[fam][i];const v=prompt('Rename:',old);if(!v)return;DB.families[fam][i]=v.trim();DB.episodes=DB.episodes.map(e=>e.fam===fam&&e.mem===old?{...e,mem:v.trim()}:e);await gsPost({action:'saveFamilies',data:DB.families});renderSettingsView();initForm()}
+async function deleteMem(fam,i){DB.families[fam].splice(i,1);await gsPost({action:'saveFamilies',data:DB.families});renderSettingsView();initForm()}
+async function addMem(fam){const inp=document.getElementById('nm-'+CSS.escape(fam));const v=inp?.value.trim();if(!v)return;DB.families[fam].push(v);await gsPost({action:'saveFamilies',data:DB.families});inp.value='';renderSettingsView();initForm();toast(v+' added.','ok')}
+async function addFam(){const v=document.getElementById('newFam')?.value.trim();if(!v)return;DB.families[v]=[];await gsPost({action:'saveFamilies',data:DB.families});renderSettingsView();initForm();toast('Family group created.','ok')}
+async function saveXCfg(){const u={xero_client_id:document.getElementById('xCID')?.value||'',xero_client_secret:document.getElementById('xCS')?.value||'',xero_bookkeeper:document.getElementById('xBK')?.value||'',xero_provider_contact:document.getElementById('xProv')?.value||'',xero_ap_account:document.getElementById('xAPAcc')?.value||'',xero_ar_account:document.getElementById('xARAcc')?.value||''};Object.assign(DB.settings,u);await gsPost({action:'saveSettings',data:u});toast('Xero settings saved.','ok')}
+function connectXero(){const id=(document.getElementById('xCID')?.value||DB.settings.xero_client_id||'').trim();if(!id){toast('Enter Client ID first.','err');return}const r=encodeURIComponent(location.href.split('?')[0]),sc=encodeURIComponent('openid profile email accounting.transactions accounting.contacts offline_access'),st=Math.random().toString(36).slice(2);localStorage.setItem('xst',st);window.open(`https://login.xero.com/identity/connect/authorize?response_type=code&client_id=${id}&redirect_uri=${r}&scope=${sc}&state=${st}`,'_blank','width=620,height=700');toast('Xero auth window opened.','ok')}
+async function handleXeroCB(){const p=new URLSearchParams(location.search);const code=p.get('code'),state=p.get('state');if(code&&state===localStorage.getItem('xst')){toast('Exchanging Xero token…');const res=await gsPost({action:'xeroTokenExchange',code,redirectUri:location.href.split('?')[0]});if(res?.ok){setXeroOn(true);toast('Xero connected ✓','ok')}else{toast('Xero auth failed','err')}history.replaceState({},'',location.pathname)}}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEEK + RENDER
+// ═══════════════════════════════════════════════════════════════════════
+function updateWkHeader(){
+  const ws=getWkStart(),we=new Date(ws);we.setDate(we.getDate()+6);
+  const wl=document.getElementById('wkLabel'),wd=document.getElementById('wkDates'),wb=document.getElementById('wkBadge'),ln=document.getElementById('lockNote');
+  if(wl)wl.textContent=`Week of ${fmt(ws)}`;
+  if(wd)wd.textContent=`${fmt(ws)} — ${fmt(we)}${wkOff===0?' (Current week)':wkOff===-1?' (Last week)':''}`;
+  const lk=isLocked();
+  if(wb){wb.textContent=lk?'🔒 Locked':'● Open';wb.className='wsb '+(lk?'wsb-locked':'wsb-open')}
+  if(ln)ln.textContent=lk?'Week locked — view only':'';
+}
+function shiftWeek(dir){wkOff+=dir;updateWkHeader();renderTable();renderSummary();if(currentRole==='admin')renderAPAR()}
+function renderAll(){updateWkHeader();renderTable();renderSummary();if(currentRole==='admin')renderAPAR();initForm()}
+function setGSOnline(on){gsOnline=on;['gsDot'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='dot'+(on?' on':'')});['gsTxt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=on?'Sheets ✓':'Sheets'})}
+function setXeroOn(on){xeroOn=on;['xDot'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='dot'+(on?' on':'')});['xTxt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=on?'Xero ✓':'Xero'});if(currentRole==='admin')renderAPAR()}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function xlog(logId,msg,type=''){const el=document.getElementById(logId);if(!el)return;const d=document.createElement('div');d.className='xl'+(type?' '+type:'');d.textContent=`${new Date().toLocaleTimeString('en-AU')} — ${msg}`;el.prepend(d)}
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3500)}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT — load defaults so PIN screen works before GS connects
+// ═══════════════════════════════════════════════════════════════════════
+DB.families={"Escalante":["Emilio Escalante","Sarita Escalante","Laurence Lee","Escalante Child 1","Escalante Child 2"],"Kalinowski":["Kalinowski Principal","Kalinowski Spouse"],"Ruddell":["Ruddell Principal","Ruddell Member 2"],"Colwell":["Colwell Principal","Colwell Member 2"],"Personal Nominees":["Erin Snape","Jacinta Constantine"]};
+DB.clinicians=["Dr David Busby (Flametree)","IV Nurse","Care Coordinator","Specialist (External)","AMG Admin"];
+DB.types={"GP Consultation":500,"IV Infusion":500,"Care Coordination":300,"Specialist Liaison & Referral":500,"Health Report / Review":300,"After-Hours Clinical Call":1000,"Wearable Data Review":200,"Clinical Assessment":500,"Telehealth Consult":500,"Medication Management":300,"Emergency Coordination":1000,"Other":0};
+DB.settings={rate_biz:'500',rate_after:'1000',rate_wknd:'1000',rate_ph:'1000',public_holidays:'2026-01-01,2026-01-27,2026-03-02,2026-04-03,2026-04-06,2026-04-25,2026-06-01,2026-09-28,2026-12-25,2026-12-26,2026-12-28',pin_admin:DEFAULT_ADMIN_PIN,pin_staff:DEFAULT_STAFF_PIN};
+
+// ── AUTO-CONNECT Google Sheets ────────────────────────────────────────
+const HARDCODED_GS_URL = 'https://script.google.com/macros/s/AKfycbzSF9l1uvMJ2w_vGOnV9lK9blx8XKRpeJSAE1zfHyslwDh_aWk59x-zLR7t7aOPO9ua/exec';
+if (!GS_URL) {
+  GS_URL = HARDCODED_GS_URL;
+  localStorage.setItem('amg5_gsurl', GS_URL);
+}
+
+handleXeroCB();
+</script>
+</body>
+</html>
