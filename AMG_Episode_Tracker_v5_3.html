@@ -661,9 +661,16 @@ async function syncNow() {
 }
 
 function normaliseEp(e) {
+  // Handle date - could be string, Date object, or ISO string
+  var d = e.date||'';
+  if (d && typeof d === 'object' && d.toISOString) d = d.toISOString().slice(0,10);
+  if (d && typeof d === 'string' && d.length > 10) d = d.slice(0,10);
+  // Handle time
+  var t = e.time||'09:00';
+  if (t && typeof t === 'object' && t.toISOString) t = '09:00';
   return {
-    id:e.id||'', fam:e.family||'', mem:e.member||'', date:e.date||'',
-    time:e.time||'09:00', clin:e.clinician||'', type:e.type||'',
+    id:String(e.id||''), fam:e.family||'', mem:e.member||'', date:d,
+    time:t, clin:e.clinician||'', type:e.type||'',
     dur:parseInt(e.duration)||0, ap:parseFloat(e.ap_fee)||0, ar:parseFloat(e.ar_fee)||0,
     notes:e.notes||'', rate:e.rate_label||'', status:e.status||'pending',
   };
