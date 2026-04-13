@@ -640,7 +640,7 @@ function setSyncing(on, err=false) {
 }
 
 async function syncNow() {
-  if (!GS_URL) return;
+  if (!GS_URL) { GS_URL = HARDCODED_GS_URL; }
   const data = await gsGet({ action: 'getAll' });
   if (!data) return;
   DB.episodes   = (data.episodes   || []).map(normaliseEp);
@@ -1431,10 +1431,9 @@ DB.settings={rate_biz:'500',rate_after:'1000',rate_wknd:'1000',rate_ph:'1000',pu
 
 // ── AUTO-CONNECT Google Sheets ────────────────────────────────────────
 const HARDCODED_GS_URL = 'https://script.google.com/macros/s/AKfycbw_mzru9LUNTc2fFq7FVvwZpXsegkkzDHQuzT-otOmXrmdAd44ef_nBLUbgnd_I6BD6/exec';
-if (!GS_URL) {
-  GS_URL = HARDCODED_GS_URL;
-  localStorage.setItem('amg5_gsurl', GS_URL);
-}
+// Always use hardcoded URL - overrides localStorage
+GS_URL = HARDCODED_GS_URL;
+localStorage.setItem('amg5_gsurl', GS_URL);
 
 // Focus PIN input on load
 setTimeout(function() {
