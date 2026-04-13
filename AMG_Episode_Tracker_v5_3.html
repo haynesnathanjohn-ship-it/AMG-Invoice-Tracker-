@@ -624,12 +624,10 @@ async function gsPost(body) {
   if (!GS_URL) { GS_URL = HARDCODED_GS_URL; }
   setSyncing(true);
   try {
-    // Use text/plain to avoid CORS preflight with Google Apps Script
-    const res = await fetch(GS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(body)
-    });
+    // Encode as GET param to avoid CORS preflight - Apps Script handles this fine
+    const encoded = encodeURIComponent(JSON.stringify(body));
+    const url = GS_URL + '?postData=' + encoded;
+    const res = await fetch(url);
     const data = await res.json();
     setSyncing(false);
     if (data.error) { toast('Error: ' + data.error, 'err'); return null; }
