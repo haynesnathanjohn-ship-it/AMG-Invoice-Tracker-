@@ -73,6 +73,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;
   cursor:pointer;transition:all .15s;
   display:flex;align-items:center;justify-content:center;
+  outline:none;-webkit-appearance:none;
 }
 .pin-key:hover {background:rgba(255,255,255,.12);border-color:rgba(201,168,76,.4)}
 .pin-key:active {background:rgba(201,168,76,.2);transform:scale(.94)}
@@ -372,32 +373,25 @@ textarea{resize:vertical;min-height:48px}
 <!-- ═══════════════════════════════════════════
      PIN SCREEN
 ═══════════════════════════════════════════ -->
-<div id="pinScreen">
-  <div class="pin-box">
-    <div class="pin-logo">A</div>
-    <div class="pin-title">Arise Medical Group</div>
-    <div class="pin-sub">Episode of Care Tracker<br>Enter your PIN to continue</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-keypad">
-      <div class="pin-key" onclick="pinPress('1')">1</div>
-      <div class="pin-key" onclick="pinPress('2')">2</div>
-      <div class="pin-key" onclick="pinPress('3')">3</div>
-      <div class="pin-key" onclick="pinPress('4')">4</div>
-      <div class="pin-key" onclick="pinPress('5')">5</div>
-      <div class="pin-key" onclick="pinPress('6')">6</div>
-      <div class="pin-key" onclick="pinPress('7')">7</div>
-      <div class="pin-key" onclick="pinPress('8')">8</div>
-      <div class="pin-key" onclick="pinPress('9')">9</div>
-      <div class="pin-key zero" onclick="pinPress('0')">0</div>
-      <div class="pin-key del" onclick="pinDel()">⌫</div>
-    </div>
-    <div class="pin-error" id="pinError"></div>
-    <div class="pin-hint">Staff or admin PIN required</div>
+<div id="pinScreen" style="position:fixed;inset:0;background:#0F2340;display:flex;align-items:center;justify-content:center;z-index:1000;">
+  <div style="text-align:center;padding:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,168,76,0.3);border-radius:16px;max-width:320px;width:90%;">
+    <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#C9A84C,#E8C96A);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#0F2340;margin:0 auto 16px;font-family:serif;">A</div>
+    <div style="font-family:serif;font-size:22px;font-weight:600;color:#E8C96A;margin-bottom:6px;">Arise Medical Group</div>
+    <div style="font-size:12px;color:#8A93B0;margin-bottom:24px;">Enter your 4-digit PIN</div>
+    <form id="pinForm" onsubmit="doUnlock();return false;" style="margin:0;">
+      <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*"
+        maxlength="4"
+        style="width:100%;text-align:center;font-size:32px;letter-spacing:8px;padding:14px;
+               border-radius:8px;border:2px solid rgba(201,168,76,0.4);
+               background:rgba(255,255,255,0.1);color:#E8C96A;outline:none;"
+        placeholder="••••" autocomplete="off">
+      <input type="submit"
+        style="margin-top:14px;width:100%;padding:13px;background:#C9A84C;
+               color:#0F2340;border:none;border-radius:8px;font-size:15px;font-weight:700;
+               cursor:pointer;font-family:sans-serif;"
+        value="UNLOCK">
+    </form>
+    <div id="pinError" style="color:#E05555;font-size:12px;margin-top:10px;height:18px;"></div>
   </div>
 </div>
 
@@ -496,28 +490,44 @@ function pinDel() {
   document.getElementById('pinError').textContent = '';
 }
 
-function updatePinDots(state = '') {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    dot.className = 'pin-dot';
-    if (state === 'error') { dot.classList.add('error'); return; }
-    if (i < currentPin.length) dot.classList.add('filled');
-  }
+function updatePinDots(state) {
+  // legacy function - dots removed from new PIN screen
 }
 
-function checkPin() {
-  const adminPin = DB.settings?.pin_admin || DEFAULT_ADMIN_PIN;
-  const staffPin = DB.settings?.pin_staff || DEFAULT_STAFF_PIN;
+function checkPin(val) {
+  var pin = (val || '').toString().trim();
+  // pad with leading zeros if needed
+  while (pin.length < 4) pin = '0' + pin;
+  pin = pin.slice(-4);
 
-  if (currentPin === adminPin) {
+  var adminPin = '1234';
+  var staffPin = '0000';
+  try {
+    if (DB && DB.settings && DB.settings.pin_admin) adminPin = DB.settings.pin_admin.toString();
+    if (DB && DB.settings && DB.settings.pin_staff) staffPin = DB.settings.pin_staff.toString();
+  } catch(e) {}
+
+  if (pin === adminPin) {
     currentRole = 'admin';
     loginSuccess();
-  } else if (currentPin === staffPin) {
+  } else if (pin === staffPin) {
     currentRole = 'staff';
     loginSuccess();
   } else {
-    pinError();
+    document.getElementById('pinError').textContent = 'Incorrect PIN — try again';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
   }
+}
+
+function doUnlock() {
+  var raw = document.getElementById('pinInput').value.toString().trim();
+  if (!raw) { document.getElementById('pinError').textContent = 'Enter your PIN'; return; }
+  // For password type, value is exactly what was typed - no padding needed
+  var pin = raw;
+  while (pin.length < 4) pin = '0' + pin;
+  pin = pin.slice(-4);
+  checkPin(pin);
 }
 
 function loginSuccess() {
@@ -530,15 +540,7 @@ function loginSuccess() {
 }
 
 function pinError() {
-  pinLocked = true;
-  for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot error';
-  document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
-  setTimeout(() => {
-    currentPin = '';
-    pinLocked = false;
-    for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot';
-    document.getElementById('pinError').textContent = '';
-  }, 1400);
+  // legacy function - no longer used
 }
 
 function lockApp() {
@@ -546,7 +548,10 @@ function lockApp() {
   currentPin  = '';
   document.getElementById('appShell').style.display  = 'none';
   document.getElementById('pinScreen').style.display = 'flex';
-  updatePinDots();
+  var pi = document.getElementById('pinInput');
+  if (pi) { pi.value = ''; pi.focus(); }
+  var pe = document.getElementById('pinError');
+  if (pe) pe.textContent = '';
   clearInterval(window._syncInterval);
 }
 
@@ -1425,13 +1430,33 @@ DB.types={"GP Consultation":500,"IV Infusion":500,"Care Coordination":300,"Speci
 DB.settings={rate_biz:'500',rate_after:'1000',rate_wknd:'1000',rate_ph:'1000',public_holidays:'2026-01-01,2026-01-27,2026-03-02,2026-04-03,2026-04-06,2026-04-25,2026-06-01,2026-09-28,2026-12-25,2026-12-26,2026-12-28',pin_admin:DEFAULT_ADMIN_PIN,pin_staff:DEFAULT_STAFF_PIN};
 
 // ── AUTO-CONNECT Google Sheets ────────────────────────────────────────
-const HARDCODED_GS_URL = 'https://script.google.com/macros/s/AKfycbzSF9l1uvMJ2w_vGOnV9lK9blx8XKRpeJSAE1zfHyslwDh_aWk59x-zLR7t7aOPO9ua/exec';
+const HARDCODED_GS_URL = 'https://script.google.com/macros/s/AKfycbw_mzru9LUNTc2fFq7FVvwZpXsegkkzDHQuzT-otOmXrmdAd44ef_nBLUbgnd_I6BD6/exec';
 if (!GS_URL) {
   GS_URL = HARDCODED_GS_URL;
   localStorage.setItem('amg5_gsurl', GS_URL);
 }
 
+// Focus PIN input on load
+setTimeout(function() {
+  var p = document.getElementById('pinInput');
+  if (p) p.focus();
+}, 300);
+
 handleXeroCB();
+
+// PIN keypad event delegation - works in all iframe/sandbox contexts
+document.addEventListener('DOMContentLoaded', function() {
+  var kp = document.getElementById('pinKeypad');
+  if (kp) {
+    kp.addEventListener('click', function(e) {
+      var btn = e.target.closest('button[data-d]');
+      if (!btn) return;
+      var d = btn.getAttribute('data-d');
+      if (d === 'del') pinDel();
+      else pinPress(d);
+    });
+  }
+});
 </script>
 </body>
 </html>
