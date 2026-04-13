@@ -734,13 +734,14 @@ function calcAR(){
 // ═══════════════════════════════════════════════════════════════════════
 // TAB SWITCH
 // ═══════════════════════════════════════════════════════════════════════
-function switchTab(tab){
+async function switchTab(tab){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   const vEl=document.getElementById('view-'+tab);
-  const tEl=document.querySelector(`.tab[data-tab="${tab}"]`);
+  const tEl=document.querySelector('[data-tab="'+tab+'"]');
   if(vEl) vEl.classList.add('active');
   if(tEl) tEl.classList.add('active');
+  await syncNow();
   if(tab==='tracker')  renderTrackerView();
   if(tab==='billing')  renderBillingView();
   if(tab==='history')  renderHistoryView();
