@@ -558,7 +558,9 @@ function lockApp() {
 // ═══════════════════════════════════════════════════════════════════════
 // UI BUILDER — renders correct tabs + views based on role
 // ═══════════════════════════════════════════════════════════════════════
-function buildUI() {
+async function buildUI() {
+  // Sync from Google Sheets first before rendering UI
+  await syncNow();
   const tabBar = document.getElementById('tabBar');
   const vc     = document.getElementById('viewContainer');
   tabBar.innerHTML = '';
@@ -591,7 +593,6 @@ function buildUI() {
 
   // Render initial view
   renderTrackerView();
-  syncNow();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
