@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMG — Invoice Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0F2340;--navy-mid:#1B3A6B;--navy-light:#2A4F8A;
+  --gold:#C9A84C;--gold-light:#E8C96A;--gold-pale:#F5E9C8;
+  --white:#FFFFFF;--off:#F7F9FC;--g1:#EEF1F8;--g2:#D1D7E8;--g3:#8A93B0;
+  --text:#1A1E2E;--muted:#6B7494;
+  --green:#1A6B3C;--gbg:#E6F5EE;--green-light:#4CAF50;
+  --amber:#7B5200;--abg:#FFF8E6;
+  --red:#8B1A1A;--rbg:#FDEAEA;
+  --xblue:#13B5EA;
+  --r:10px;--sh:0 2px 16px rgba(15,35,64,.10);--shl:0 8px 40px rgba(15,35,64,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh}
+
+/* PIN SCREEN */
+#pinScreen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000}
+.pin-box{text-align:center;padding:48px 40px;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:20px;max-width:360px;width:90%}
+.pin-logo{width:52px;height:52px;border-radius:13px;margin:0 auto 18px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--navy)}
+.pin-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--gold-light);margin-bottom:4px}
+.pin-sub{font-size:12px;color:var(--g3);margin-bottom:28px}
+#pinInput{width:100%;text-align:center;font-size:32px;letter-spacing:8px;padding:14px;border-radius:8px;border:2px solid rgba(201,168,76,.4);background:rgba(255,255,255,.1);color:var(--gold-light);outline:none;font-family:monospace}
+#unlockBtn{margin-top:14px;width:100%;padding:13px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+#pinError{color:#E05555;font-size:12px;margin-top:10px;height:18px}
+
+/* APP SHELL */
+#appShell{display:none;min-height:100vh;background:var(--off)}
+.topbar{background:var(--navy);height:56px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;border-bottom:2px solid var(--gold)}
+.tb-brand{display:flex;align-items:center;gap:11px}
+.tb-logo{width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy)}
+.tb-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold-light)}
+.tb-sub{font-size:10px;color:var(--g3);letter-spacing:.08em;text-transform:uppercase}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-badge{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--g3);font-size:11px;cursor:pointer}
+.tb-badge:hover{border-color:var(--gold);color:var(--gold-light)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--g3)}
+.dot.on{background:var(--green-light);box-shadow:0 0 6px rgba(76,175,80,.7)}
+.role-badge{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.rb-admin{background:rgba(201,168,76,.2);color:var(--gold-light);border:1px solid rgba(201,168,76,.4)}
+.rb-staff{background:rgba(138,147,176,.15);color:var(--g3);border:1px solid rgba(138,147,176,.3)}
+
+/* TABS */
+.tabs{display:flex;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px}
+.tab{padding:12px 16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--g3);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--gold-light)}
+.tab.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+
+.view{display:none}.view.active{display:block}
+.main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+
+/* CARDS */
+.card{background:var(--white);border-radius:14px;box-shadow:var(--shl);overflow:hidden;margin-bottom:20px}
+.card-hdr{background:var(--navy);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold)}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold-light)}
+.card-sub{font-size:10px;color:var(--g3);margin-top:1px}
+.card-body{padding:20px}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fg label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.fgr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+input,select,textarea{font-family:'DM Sans',sans-serif;font-size:13px;border:1.5px solid var(--g2);border-radius:8px;padding:9px 12px;color:var(--text);background:var(--off);transition:border-color .2s;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--navy-mid);background:white;box-shadow:0 0 0 3px rgba(27,58,107,.07)}
+.pfx{position:relative}.pfx input{padding-left:24px}
+.pfx::before{content:'$';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);pointer-events:none}
+
+/* RATE BADGE */
+.rate-badge{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:12px}
+.rb-biz{background:var(--gbg);color:var(--green)}
+.rb-after{background:var(--abg);color:var(--amber)}
+.rb-wknd{background:#F5E6FB;color:#7B2D8B}
+.rb-ph{background:var(--rbg);color:var(--red)}
+
+/* BUTTONS */
+.btn-primary{padding:11px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,35,64,.28)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-primary.full{width:100%;justify-content:center}
+.btn-secondary{padding:9px 16px;border:1.5px solid var(--g2);border-radius:8px;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
+.btn-secondary:hover{border-color:var(--navy-mid);color:var(--navy)}
+.btn-xero-ap{padding:11px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#7B2D8B,#4A1060);color:#F0C6FF;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.btn-xero-ap:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 16px rgba(123,45,139,.35)}
+.btn-xero-ap:disabled{opacity:.4;cursor:not-allowed}
+.btn-xero-ar{padding:11px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--xblue),#0D91C2);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.btn-xero-ar:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(19,181,234,.4)}
+.btn-xero-ar:disabled{opacity:.4;cursor:not-allowed}
+
+/* INVOICE TABLE */
+.inv-table{width:100%;border-collapse:collapse;font-size:12px}
+.inv-table thead tr{background:var(--navy)}
+.inv-table thead th{padding:10px 12px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--gold-light);white-space:nowrap}
+.inv-table tbody tr{border-bottom:1px solid var(--g1);transition:background .12s}
+.inv-table tbody tr:hover{background:var(--off)}
+.inv-table td{padding:10px 12px;vertical-align:middle}
+.inv-table td.muted{color:var(--muted);font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-pending{background:var(--abg);color:var(--amber)}
+.b-pushed{background:var(--gbg);color:var(--green)}
+.b-locked{background:var(--g1);color:var(--g3)}
+.btn-del{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:13px;color:var(--g3);transition:all .15s}
+.btn-del:hover{color:var(--red);background:var(--rbg)}
+.btn-edit{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:13px;color:var(--g3);transition:all .15s}
+.btn-edit:hover{color:var(--navy-mid);background:var(--g1)}
+
+/* SUMMARY STRIP */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sc{background:white;border:1px solid var(--g2);border-radius:10px;padding:14px 16px}
+.sc-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--g3);margin-bottom:4px}
+.sc-value{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--navy);line-height:1}
+.sc-sub{font-size:9px;color:var(--g3);margin-top:3px}
+.sc-ap .sc-value{color:#7B2D8B}
+.sc-ar .sc-value{color:var(--green)}
+.sc-mg .sc-value{color:var(--gold)}
+
+/* WEEK SELECTOR */
+.week-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.week-label{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy)}
+.week-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.week-nav{display:flex;align-items:center;gap:8px}
+.btn-wk{width:32px;height:32px;border-radius:7px;background:white;border:1.5px solid var(--g2);color:var(--navy);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.btn-wk:hover{border-color:var(--navy);background:var(--navy);color:var(--gold-light)}
+.week-status{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
+.ws-open{background:rgba(201,168,76,.15);color:var(--amber);border:1px solid rgba(201,168,76,.3)}
+.ws-locked{background:var(--gbg);color:var(--green);border:1px solid rgba(26,107,60,.3)}
+
+/* WEEK END PANEL */
+.we-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.ap-panel{background:white;border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.ap-hdr{background:linear-gradient(135deg,#4A1060,#7B2D8B);padding:14px 18px;border-bottom:2px solid #C97BE8}
+.ap-hdr-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#F0C6FF}
+.ap-hdr-s{font-size:10px;color:#C97BE8;margin-top:1px}
+.ap-body{padding:16px 18px}
+.ar-panel{background:white;border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.ar-hdr{background:linear-gradient(135deg,#0D4A26,#1A6B3C);padding:14px 18px;border-bottom:2px solid #4CAF50}
+.ar-hdr-t{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#A5D6B0}
+.ar-hdr-s{font-size:10px;color:#81C784;margin-top:1px}
+.ar-body{padding:16px 18px}
+.contractor-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--g1);font-size:12px}
+.contractor-row:last-child{border-bottom:none}
+.cr-name{font-weight:500}
+.cr-ref{font-size:10px;color:var(--muted)}
+.cr-amount{font-weight:600;color:#7B2D8B}
+.client-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--g1);font-size:12px}
+.client-row:last-child{border-bottom:none}
+.cl-name{font-weight:500}
+.cl-eps{font-size:10px;color:var(--muted)}
+.total-row{display:flex;justify-content:space-between;padding:10px 0 0;border-top:2px solid var(--g2);font-weight:700;font-size:13px;margin-top:4px}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+
+/* AR EDIT TABLE */
+.ar-edit-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--g1)}
+.ar-edit-row:last-child{border-bottom:none}
+.ar-edit-name{flex:1;font-size:12px;font-weight:500}
+.ar-edit-input{width:110px}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+
+/* HISTORY */
+.history-card{background:white;border-radius:12px;box-shadow:var(--sh);overflow:hidden;margin-bottom:14px}
+.hc-hdr{background:var(--navy);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold)}
+.hc-week{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--gold-light)}
+.hc-totals{display:flex;gap:14px;align-items:center}
+.hc-body{padding:14px 16px}
+.hc-row{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid var(--g1)}
+.hc-row:last-child{border-bottom:none}
+
+/* SETTINGS */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.scard{background:white;border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+.scard.full{grid-column:1/-1}
+.scard-hdr{background:var(--navy);padding:12px 18px;border-bottom:2px solid var(--gold)}
+.scard-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--gold-light)}
+.scard-sub{font-size:10px;color:var(--g3);margin-top:1px}
+.scard-body{padding:16px 18px}
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;font-size:12px;transition:background .15s}
+.list-item:hover{background:var(--off)}
+.add-row{display:flex;gap:8px;margin-top:10px}
+.btn-add{padding:9px 14px;border:none;border-radius:8px;background:var(--navy);color:var(--gold-light);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-add:hover{background:var(--navy-mid)}
+.pin-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--g1)}
+.pin-row:last-child{border-bottom:none}
+.pin-inp{display:flex;gap:8px;align-items:center}
+.pin-inp input{width:100px;text-align:center;letter-spacing:.2em;font-size:14px}
+.btn-pin{padding:7px 14px;border:none;border-radius:7px;background:var(--navy);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.xero-status{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--off);border-radius:8px;border:1px solid var(--g2);font-size:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:20px;background:var(--navy);color:var(--gold-light);padding:11px 16px;border-radius:10px;font-size:12px;font-weight:500;box-shadow:var(--shl);border-left:3px solid var(--gold);transform:translateX(140%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:1000;max-width:300px}
+.toast.show{transform:none}
+.toast.err{border-left-color:#E05555}
+.toast.ok{border-left-color:var(--green-light)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(8,18,36,.75);z-index:500;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:16px;padding:24px;max-width:520px;width:100%;box-shadow:var(--shl);animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+.btn-cancel{flex:1;padding:10px;background:var(--g1);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;color:var(--muted)}
+
+@media(max-width:768px){.summary-strip{grid-template-columns:repeat(2,1fr)}.settings-grid{grid-template-columns:1fr}.we-grid{grid-template-columns:1fr}.fgr,.fgr3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pinScreen">
+  <div class="pin-box">
+    <div class="pin-logo">A</div>
+    <div class="pin-title">Arise Medical Group</div>
+    <div class="pin-sub">Invoice Tracker — Enter your PIN</div>
+    <form onsubmit="doUnlock();return false;">
+      <input type="password" id="pinInput" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      <input type="submit" id="unlockBtn" value="UNLOCK">
+    </form>
+    <div id="pinError"></div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-logo">A</div>
+      <div>
+        <div class="tb-name">Arise Medical Group</div>
+        <div class="tb-sub">Invoice Tracker</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="role-badge" id="roleBadge"></div>
+      <div class="tb-badge" id="sheetsBadge"><div class="dot" id="sheetsDot"></div><span id="sheetsTxt">Sheets</span></div>
+      <div class="tb-badge" id="xeroBadge" style="display:none"><div class="dot" id="xeroDot"></div><span id="xeroTxt">Xero</span></div>
+      <div class="tb-badge" onclick="syncNow()">↻</div>
+      <div class="tb-badge" onclick="lockApp()" style="color:#E05555;border-color:rgba(224,85,85,.3)">🔒 Lock</div>
+    </div>
+  </div>
+  <div class="tabs" id="tabBar"></div>
+  <div id="viewContainer"></div>
+</div>
+
+<!-- MODAL: Add Invoice -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Contractor Invoice</div>
+    <div class="modal-sub">Enter the invoice details from your contractor</div>
+    <div class="fgr">
+      <div class="fg"><label>Contractor</label>
+        <select id="mContractor">
+          <option value="">— Select —</option>
+        </select>
+      </div>
+      <div class="fg"><label>Invoice Number</label>
+        <input type="text" id="mInvNum" placeholder="e.g. FT-2026-042">
+      </div>
+    </div>
+    <div class="fgr">
+      <div class="fg"><label>Invoice Date</label>
+        <input type="date" id="mDate" onchange="onModalDateChange()">
+      </div>
+      <div class="fg"><label>Client</label>
+        <select id="mClient">
+          <option value="">— Select —</option>
+        </select>
+      </div>
+    </div>
+    <div class="rate-badge" id="modalRateBadge" style="display:none">
+      <span id="mRateIcon"></span>
+      <span id="mRateTxt"></span>
+      <span id="mRateAmt" style="margin-left:auto;font-size:13px"></span>
+    </div>
+    <div class="fgr">
+      <div class="fg"><label>AP Amount — Contractor charges AMG ($)</label>
+        <div class="pfx"><input type="number" id="mAP" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+      <div class="fg"><label>AR Amount — AMG charges Client ($)</label>
+        <div class="pfx"><input type="number" id="mAR" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+    </div>
+    <div class="fg"><label>Description / Notes (optional)</label>
+      <input type="text" id="mNotes" placeholder="e.g. IV Essentials, Clinical Assessment...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveInvoice()">✓ Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const GS_URL = 'https://script.google.com/macros/s/AKfycbw_mzru9LUNTc2fFq7FVvwZpXsegkkzDHQuzT-otOmXrmdAd44ef_nBLUbgnd_I6BD6/exec';
+const DEFAULT_ADMIN_PIN = '1234';
+const DEFAULT_STAFF_PIN = '0000';
+
+let currentRole = null;
+let editId = null;
+let wkOff = 0;
+
+let DB = {
+  invoices: [],
+  contractors: [],
+  clients: [],
+  settings: {},
+  locked: []
+};
+
+// ═══════════════════════════════════════
+// PIN
+// ═══════════════════════════════════════
+function doUnlock() {
+  var pin = document.getElementById('pinInput').value.toString().trim();
+  while (pin.length < 4) pin = '0' + pin;
+  pin = pin.slice(-4);
+  var adminPin = '1234', staffPin = '0000';
+  try {
+    if (DB.settings.pin_admin) adminPin = DB.settings.pin_admin.toString();
+    if (DB.settings.pin_staff) staffPin = DB.settings.pin_staff.toString();
+  } catch(e) {}
+  if (pin === adminPin) { currentRole = 'admin'; loginSuccess(); }
+  else if (pin === staffPin) { currentRole = 'staff'; loginSuccess(); }
+  else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN';
+    document.getElementById('pinInput').value = '';
+    setTimeout(() => document.getElementById('pinError').textContent = '', 2000);
+  }
+}
+
+function loginSuccess() {
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('roleBadge').textContent = currentRole === 'admin' ? '⚡ Admin' : '👤 Staff';
+  document.getElementById('roleBadge').className = 'role-badge ' + (currentRole === 'admin' ? 'rb-admin' : 'rb-staff');
+  if (currentRole === 'admin') document.getElementById('xeroBadge').style.display = 'flex';
+  buildUI();
+}
+
+function lockApp() {
+  currentRole = null;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('pinScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  clearInterval(window._syncInterval);
+}
+
+// ═══════════════════════════════════════
+// GOOGLE SHEETS
+// ═══════════════════════════════════════
+async function gsGet(params) {
+  try {
+    const res = await fetch(GS_URL + '?' + new URLSearchParams(params));
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+async function gsPost(body) {
+  try {
+    const encoded = encodeURIComponent(JSON.stringify(body));
+    const res = await fetch(GS_URL + '?postData=' + encoded);
+    const data = await res.json();
+    if (data && data.error) { toast('Error: ' + data.error, 'err'); return null; }
+    return data;
+  } catch(e) { toast('Sync error', 'err'); return null; }
+}
+
+async function syncNow() {
+  const data = await gsGet({ action: 'getAllV6' });
+  if (!data) return;
+  DB.invoices    = (data.invoices    || []).map(normaliseInv);
+  DB.contractors = data.contractors  || [];
+  DB.clients     = data.clients      || [];
+  DB.settings    = data.settings     || {};
+  DB.locked      = data.locked       || [];
+  setGSOnline(true);
+  if (DB.settings.xero_access_token) setXeroOn(true);
+  renderCurrentView();
+  clearInterval(window._syncInterval);
+  window._syncInterval = setInterval(syncNow, 30000);
+}
+
+function normaliseInv(e) {
+  var d = e.date || '';
+  if (d && typeof d === 'object' && d.toISOString) d = d.toISOString().slice(0,10);
+  if (d && typeof d === 'string' && d.length > 10) d = d.slice(0,10);
+  return {
+    id: String(e.id||''),
+    contractor: e.contractor||'',
+    inv_num: e.inv_num||'',
+    date: d,
+    client: e.client||'',
+    ap: parseFloat(e.ap)||0,
+    ar: parseFloat(e.ar)||0,
+    notes: e.notes||'',
+    status: e.status||'pending',
+    rate_label: e.rate_label||''
+  };
+}
+
+function setGSOnline(on) {
+  document.getElementById('sheetsDot').className = 'dot' + (on ? ' on' : '');
+  document.getElementById('sheetsTxt').textContent = on ? 'Sheets ✓' : 'Sheets';
+}
+function setXeroOn(on) {
+  document.getElementById('xeroDot').className = 'dot' + (on ? ' on' : '');
+  document.getElementById('xeroTxt').textContent = on ? 'Xero ✓' : 'Xero';
+}
+
+// ═══════════════════════════════════════
+// WEEK HELPERS
+// ═══════════════════════════════════════
+function getWkStart(off) {
+  off = off === undefined ? wkOff : off;
+  const d = new Date(), day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1) + off * 7);
+  d.setHours(0,0,0,0); return d;
+}
+function wkKey(off) { return getWkStart(off).toISOString().slice(0,10); }
+function inWeek(ds, off) {
+  const ws = getWkStart(off), we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+  const d = new Date(ds + 'T00:00:00');
+  return d >= ws && d <= we;
+}
+function fmt(d) { return d.toLocaleDateString('en-AU', {day:'numeric', month:'short', year:'numeric'}); }
+function wkStartOfDate(ds) {
+  const d = new Date(ds + 'T00:00:00'), day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  d.setHours(0,0,0,0); return d.toISOString().slice(0,10);
+}
+function isLocked(off) { return DB.locked.includes(wkKey(off)); }
+
+// ═══════════════════════════════════════
+// SLA RATE
+// ═══════════════════════════════════════
+function getRate(dateStr) {
+  const s = DB.settings;
+  const ph = ((s.public_holidays||'')).split(',').map(x=>x.trim());
+  const rates = { biz: parseFloat(s.rate_biz)||500, after: parseFloat(s.rate_after)||1000, wknd: parseFloat(s.rate_wknd)||1000, ph: parseFloat(s.rate_ph)||1000 };
+  if (ph.includes(dateStr)) return { label:'Public Holiday', rate: rates.ph, cls:'rb-ph', icon:'🏖️' };
+  const d = new Date(dateStr + 'T12:00:00'), dow = d.getDay();
+  if (dow === 0 || dow === 6) return { label:'Weekend', rate: rates.wknd, cls:'rb-wknd', icon:'🌙' };
+  return { label:'Business Hours', rate: rates.biz, cls:'rb-biz', icon:'☀️' };
+}
+
+// ═══════════════════════════════════════
+// UI BUILD
+// ═══════════════════════════════════════
+let currentTab = 'inbox';
+
+function buildUI() {
+  const tabBar = document.getElementById('tabBar');
+  const vc = document.getElementById('viewContainer');
+  tabBar.innerHTML = '';
+  vc.innerHTML = '';
+
+  const tabs = currentRole === 'admin'
+    ? [
+        { id:'inbox',   label:'📥 Invoice Inbox' },
+        { id:'weekend', label:'📊 Week End' },
+        { id:'history', label:'📅 History' },
+        { id:'settings',label:'⚙ Settings' },
+      ]
+    : [
+        { id:'inbox', label:'📥 Invoice Inbox' },
+      ];
+
+  tabs.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (i === 0 ? ' active' : '');
+    el.setAttribute('data-tab', t.id);
+    el.textContent = t.label;
+    el.onclick = () => switchTab(t.id);
+    tabBar.appendChild(el);
+    const view = document.createElement('div');
+    view.className = 'view' + (i === 0 ? ' active' : '');
+    view.id = 'view-' + t.id;
+    vc.appendChild(view);
+  });
+
+  currentTab = 'inbox';
+  syncNow();
+}
+
+async function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const tEl = document.querySelector('[data-tab="' + tab + '"]');
+  const vEl = document.getElementById('view-' + tab);
+  if (tEl) tEl.classList.add('active');
+  if (vEl) vEl.classList.add('active');
+  currentTab = tab;
+  await syncNow();
+}
+
+function renderCurrentView() {
+  if (currentTab === 'inbox')   renderInbox();
+  if (currentTab === 'weeknd' || currentTab === 'weekend') renderWeekEnd();
+  if (currentTab === 'history') renderHistory();
+  if (currentTab === 'settings') renderSettings();
+}
+
+// ═══════════════════════════════════════
+// INBOX VIEW
+// ═══════════════════════════════════════
+function renderInbox() {
+  const el = document.getElementById('view-inbox');
+  if (!el) return;
+
+  const isAdmin = currentRole === 'admin';
+  const wInvs = DB.invoices.filter(i => inWeek(i.date));
+  const ap = wInvs.reduce((s,i) => s + i.ap, 0);
+  const ar = wInvs.reduce((s,i) => s + i.ar, 0);
+  const margin = ar - ap;
+
+  const ws = getWkStart(), we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+  const locked = isLocked();
+
+  el.innerHTML = `
+  <div class="main">
+    <div class="week-bar">
+      <div>
+        <div class="week-label">Week of ${fmt(ws)}</div>
+        <div class="week-sub">${fmt(ws)} — ${fmt(we)}${wkOff===0?' (Current week)':''}</div>
+      </div>
+      <div class="week-nav">
+        <span class="week-status ${locked ? 'ws-locked' : 'ws-open'}">${locked ? '🔒 Locked' : '● Open'}</span>
+        <button class="btn-wk" onclick="shiftWeek(-1)">‹</button>
+        <button class="btn-wk" onclick="shiftWeek(1)">›</button>
+        ${!locked ? `<button class="btn-primary" onclick="openAddInvoice()">+ Add Invoice</button>` : ''}
+      </div>
+    </div>
+
+    ${isAdmin ? `
+    <div class="summary-strip">
+      <div class="sc"><div class="sc-label">Invoices</div><div class="sc-value">${wInvs.length}</div><div class="sc-sub">this week</div></div>
+      <div class="sc sc-ap"><div class="sc-label">AP — Contractor Cost</div><div class="sc-value">$${ap.toLocaleString('en-AU',{minimumFractionDigits:0})}</div><div class="sc-sub">excl. GST</div></div>
+      <div class="sc sc-ar"><div class="sc-label">AR — Client Invoice</div><div class="sc-value">$${ar.toLocaleString('en-AU',{minimumFractionDigits:0})}</div><div class="sc-sub">excl. GST</div></div>
+      <div class="sc sc-mg"><div class="sc-label">AMG Margin</div><div class="sc-value" style="color:${margin>=0?'var(--green)':'var(--red)'}">$${margin.toLocaleString('en-AU',{minimumFractionDigits:0})}</div><div class="sc-sub">AR minus AP</div></div>
+    </div>` : ''}
+
+    <div class="card">
+      <div class="card-hdr">
+        <div><div class="card-title">Contractor Invoices</div><div class="card-sub">${locked ? 'Week locked — view only' : 'Add invoices as they arrive'}</div></div>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${wInvs.length ? `
+        <div style="overflow-x:auto">
+          <table class="inv-table">
+            <thead><tr>
+              <th>Date</th><th>Contractor</th><th>Inv #</th><th>Client</th><th>Notes</th>
+              <th>AP ($)</th>${isAdmin ? '<th>AR ($)</th><th>Margin</th>' : ''}
+              <th>Status</th><th></th>
+            </tr></thead>
+            <tbody>
+              ${wInvs.map(inv => {
+                const m = inv.ar - inv.ap;
+                const bCls = inv.status==='pushed'?'b-pushed':locked?'b-locked':'b-pending';
+                const bTxt = inv.status==='pushed'?'Pushed':locked?'Locked':'Pending';
+                return `<tr>
+                  <td class="muted">${inv.date}<br><span style="font-size:9px">${inv.rate_label||''}</span></td>
+                  <td style="font-weight:500">${inv.contractor}</td>
+                  <td class="muted">${inv.inv_num||'—'}</td>
+                  <td>${inv.client}</td>
+                  <td class="muted">${inv.notes||'—'}</td>
+                  <td style="font-weight:600;color:#7B2D8B">$${inv.ap.toLocaleString('en-AU',{minimumFractionDigits:2})}</td>
+                  ${isAdmin ? `
+                  <td style="font-weight:600;color:var(--green)">$${inv.ar.toLocaleString('en-AU',{minimumFractionDigits:2})}</td>
+                  <td style="font-weight:600;color:${m>=0?'var(--green)':'var(--red)'}">$${m.toLocaleString('en-AU',{minimumFractionDigits:2})}</td>
+                  ` : ''}
+                  <td><span class="badge ${bCls}">${bTxt}</span></td>
+                  <td style="white-space:nowrap">
+                    ${!locked && inv.status==='pending' ? `<button class="btn-edit" onclick="openEditInvoice('${inv.id}')">✎</button>` : ''}
+                    ${isAdmin && !locked && inv.status==='pending' ? `<button class="btn-del" onclick="deleteInvoice('${inv.id}')">✕</button>` : ''}
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>` : `
+        <div class="empty">
+          <div class="empty-icon">📄</div>
+          <p>No invoices this week.</p>
+          <p style="font-size:11px;margin-top:6px">Click "+ Add Invoice" to enter a contractor invoice.</p>
+        </div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// WEEK END VIEW
+// ═══════════════════════════════════════
+function renderWeekEnd() {
+  const el = document.getElementById('view-weekend');
+  if (!el) return;
+
+  const ws = getWkStart(), we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+  const locked = isLocked();
+  const wInvs = DB.invoices.filter(i => inWeek(i.date) && i.status === 'pending');
+
+  // Group by contractor (AP) and by client (AR)
+  const byContractor = {}, byClient = {};
+  wInvs.forEach(inv => {
+    if (!byContractor[inv.contractor]) byContractor[inv.contractor] = { ap:0, count:0, ids:[] };
+    byContractor[inv.contractor].ap += inv.ap;
+    byContractor[inv.contractor].count++;
+    byContractor[inv.contractor].ids.push(inv.id);
+    if (!byClient[inv.client]) byClient[inv.client] = { ar:0, count:0 };
+    byClient[inv.client].ar += inv.ar;
+    byClient[inv.client].count++;
+  });
+
+  const totalAP = wInvs.reduce((s,i) => s+i.ap, 0);
+  const totalAR = wInvs.reduce((s,i) => s+i.ar, 0);
+  const xeroOn = document.getElementById('xeroDot').classList.contains('on');
+
+  el.innerHTML = `
+  <div class="main">
+    <div class="week-bar">
+      <div>
+        <div class="week-label">Week End — ${fmt(ws)}</div>
+        <div class="week-sub">${fmt(ws)} — ${fmt(we)}</div>
+      </div>
+      <div class="week-nav">
+        <span class="week-status ${locked ? 'ws-locked' : 'ws-open'}">${locked ? '🔒 Pushed & Locked' : '● Ready to push'}</span>
+        <button class="btn-wk" onclick="shiftWeek(-1)">‹</button>
+        <button class="btn-wk" onclick="shiftWeek(1)">›</button>
+      </div>
+    </div>
+
+    ${!wInvs.length ? `
+    <div class="card"><div class="card-body"><div class="empty">
+      <div class="empty-icon">✓</div>
+      <p>${locked ? 'This week has been pushed to Xero and locked.' : 'No pending invoices this week.'}</p>
+    </div></div></div>` : `
+
+    <div class="we-grid">
+      <div class="ap-panel">
+        <div class="ap-hdr">
+          <div class="ap-hdr-t">Accounts Payable — AP</div>
+          <div class="ap-hdr-s">Bills AMG owes to contractors</div>
+        </div>
+        <div class="ap-body">
+          ${Object.entries(byContractor).map(([c,d]) => `
+          <div class="contractor-row">
+            <div>
+              <div class="cr-name">${c}</div>
+              <div class="cr-ref">${d.count} invoice${d.count!==1?'s':''}</div>
+            </div>
+            <div class="cr-amount">$${d.ap.toLocaleString('en-AU',{minimumFractionDigits:2})}</div>
+          </div>`).join('')}
+          <div class="total-row" style="color:#7B2D8B">
+            <span>Total excl. GST</span>
+            <span>$${totalAP.toLocaleString('en-AU',{minimumFractionDigits:2})}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+            <span>GST (10%)</span><span>$${(totalAP*.1).toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:#7B2D8B;margin-top:4px">
+            <span>Total incl. GST</span><span>$${(totalAP*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span>
+          </div>
+          <div class="btn-row">
+            <button class="btn-xero-ap" style="flex:1" onclick="pushAP()" ${!xeroOn?'disabled':''}>↑ Push AP Bills to Xero</button>
+          </div>
+          ${!xeroOn ? '<div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center">Connect Xero in Settings to enable</div>' : ''}
+        </div>
+      </div>
+
+      <div class="ar-panel">
+        <div class="ar-hdr">
+          <div class="ar-hdr-t">Accounts Receivable — AR</div>
+          <div class="ar-hdr-s">Invoices AMG sends to clients</div>
+        </div>
+        <div class="ar-body">
+          ${Object.entries(byClient).map(([c,d]) => `
+          <div class="client-row">
+            <div>
+              <div class="cl-name">${c}</div>
+              <div class="cl-eps">${d.count} invoice${d.count!==1?'s':''} · GST $${(d.ar*.1).toFixed(2)}</div>
+            </div>
+            <div style="font-weight:600;color:var(--green)">$${d.ar.toLocaleString('en-AU',{minimumFractionDigits:2})}</div>
+          </div>`).join('')}
+          <div class="total-row" style="color:var(--green)">
+            <span>Total excl. GST</span>
+            <span>$${totalAR.toLocaleString('en-AU',{minimumFractionDigits:2})}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+            <span>GST (10%)</span><span>$${(totalAR*.1).toFixed(2)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--green);margin-top:4px">
+            <span>Total incl. GST</span><span>$${(totalAR*1.1).toLocaleString('en-AU',{minimumFractionDigits:2})}</span>
+          </div>
+          <div style="margin-top:10px;padding:10px;background:var(--gbg);border-radius:8px;display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--green)">
+            <span>AMG Margin</span><span>$${(totalAR-totalAP).toLocaleString('en-AU',{minimumFractionDigits:2})}</span>
+          </div>
+          <div class="btn-row">
+            <button class="btn-xero-ar" style="flex:1" onclick="pushAR()" ${!xeroOn?'disabled':''}>↑ Push AR Invoices to Xero</button>
+          </div>
+        </div>
+      </div>
+    </div>`}
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// HISTORY VIEW
+// ═══════════════════════════════════════
+function renderHistory() {
+  const el = document.getElementById('view-history');
+  if (!el) return;
+
+  const wm = {};
+  DB.invoices.forEach(inv => {
+    const w = wkStartOfDate(inv.date);
+    if (!wm[w]) wm[w] = [];
+    wm[w].push(inv);
+  });
+
+  const weeks = Object.keys(wm).sort((a,b) => b.localeCompare(a));
+
+  el.innerHTML = `<div class="main">
+    <div style="margin-bottom:20px">
+      <div class="week-label" style="color:var(--navy)">Invoice History</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Full AP/AR audit trail by week</div>
+    </div>
+    ${weeks.length ? weeks.map(w => {
+      const invs = wm[w];
+      const locked = DB.locked.includes(w);
+      const ap = invs.reduce((s,i) => s+i.ap, 0);
+      const ar = invs.reduce((s,i) => s+i.ar, 0);
+      const d = new Date(w+'T00:00:00'), de = new Date(d);
+      de.setDate(de.getDate()+6);
+      const byC = {};
+      invs.forEach(i => { if(!byC[i.contractor])byC[i.contractor]={ap:0,ar:0,count:0}; byC[i.contractor].ap+=i.ap; byC[i.contractor].ar+=i.ar; byC[i.contractor].count++; });
+      return `<div class="history-card">
+        <div class="hc-hdr">
+          <div class="hc-week">w/c ${fmt(d)}</div>
+          <div class="hc-totals">
+            <div style="text-align:right;font-size:11px">
+              <div style="color:#7B2D8B;font-weight:600">AP $${ap.toLocaleString('en-AU',{minimumFractionDigits:0})}</div>
+              <div style="color:var(--green);font-weight:600">AR $${ar.toLocaleString('en-AU',{minimumFractionDigits:0})}</div>
+            </div>
+            <span class="badge ${locked?'b-pushed':'b-pending'}">${locked?'Pushed':'Open'}</span>
+          </div>
+        </div>
+        <div class="hc-body">
+          ${Object.entries(byC).map(([c,d]) => `
+          <div class="hc-row">
+            <span style="font-weight:500">${c} (${d.count})</span>
+            <span><span style="color:#7B2D8B">AP $${d.ap.toFixed(0)}</span> · <span style="color:var(--green)">AR $${d.ar.toFixed(0)}</span></span>
+          </div>`).join('')}
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g2);display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+            <span>${invs.length} invoice${invs.length!==1?'s':''}</span>
+            <span style="color:${ar-ap>=0?'var(--green)':'var(--red)'};font-weight:600">Margin $${(ar-ap).toFixed(0)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">📅</div><p>No history yet.</p></div></div></div>'}
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// SETTINGS VIEW
+// ═══════════════════════════════════════
+function renderSettings() {
+  const el = document.getElementById('view-settings');
+  if (!el) return;
+  const s = DB.settings || {};
+  const xeroOn = document.getElementById('xeroDot').classList.contains('on');
+
+  el.innerHTML = `<div class="main">
+    <div style="margin-bottom:20px">
+      <div class="week-label" style="color:var(--navy)">Settings</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">All changes sync instantly to Google Sheets</div>
+    </div>
+    <div class="settings-grid">
+
+      <!-- PIN MANAGEMENT -->
+      <div class="scard full">
+        <div class="scard-hdr"><div class="scard-title">PIN Management</div><div class="scard-sub">4-digit PINs stored in Google Sheets</div></div>
+        <div class="scard-body">
+          <div class="pin-row">
+            <div><div style="font-size:13px;font-weight:500">Admin PIN</div><div style="font-size:11px;color:var(--muted)">Full access — all tabs, Xero push</div></div>
+            <div class="pin-inp"><input type="password" id="newAdminPin" maxlength="4" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"><button class="btn-pin" onclick="savePin('admin')">Save</button></div>
+          </div>
+          <div class="pin-row">
+            <div><div style="font-size:13px;font-weight:500">Staff / Contractor PIN</div><div style="font-size:11px;color:var(--muted)">Invoice inbox only</div></div>
+            <div class="pin-inp"><input type="password" id="newStaffPin" maxlength="4" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"><button class="btn-pin" onclick="savePin('staff')">Save</button></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px;padding:9px;background:var(--off);border-radius:7px">
+            Current admin PIN: <strong>${s.pin_admin?'set (hidden)':'1234 — change now'}</strong> · Staff PIN: <strong>${s.pin_staff?'set (hidden)':'0000 — change now'}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTRACTORS -->
+      <div class="scard">
+        <div class="scard-hdr"><div class="scard-title">Contractors</div><div class="scard-sub">AP suppliers who invoice AMG</div></div>
+        <div class="scard-body">
+          <ul style="list-style:none" id="contractorList">
+            ${DB.contractors.map((c,i) => `<li class="list-item"><span style="flex:1;font-size:12px">${c}</span><button class="btn-del" onclick="deleteContractor(${i})">✕</button></li>`).join('')}
+          </ul>
+          <div class="add-row">
+            <input type="text" id="newContractor" placeholder="Add contractor name...">
+            <button class="btn-add" onclick="addContractor()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="scard">
+        <div class="scard-hdr"><div class="scard-title">Clients</div><div class="scard-sub">AR recipients — families AMG invoices</div></div>
+        <div class="scard-body">
+          <ul style="list-style:none" id="clientList">
+            ${DB.clients.map((c,i) => `<li class="list-item"><span style="flex:1;font-size:12px">${c}</span><button class="btn-del" onclick="deleteClient(${i})">✕</button></li>`).join('')}
+          </ul>
+          <div class="add-row">
+            <input type="text" id="newClient" placeholder="Add client name...">
+            <button class="btn-add" onclick="addClient()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLA RATES -->
+      <div class="scard">
+        <div class="scard-hdr"><div class="scard-title">SLA Reference Rates (AWST)</div><div class="scard-sub">Shown as guidance when adding invoices</div></div>
+        <div class="scard-body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--g1)"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Schedule</th><th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Rate ex GST</th></tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--g1)"><td style="padding:8px 12px">Business Hours (Mon–Fri 08:30–17:00)</td><td style="padding:8px 12px;text-align:right"><div style="display:flex;justify-content:flex-end"><div style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px">$</span><input type="number" id="r_biz" value="${s.rate_biz||500}" style="width:80px;padding:5px 8px 5px 20px;font-size:12px;text-align:right" onchange="saveRates()"></div></div></td></tr>
+              <tr style="border-bottom:1px solid var(--g1)"><td style="padding:8px 12px">After Hours</td><td style="padding:8px 12px;text-align:right"><div style="display:flex;justify-content:flex-end"><div style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px">$</span><input type="number" id="r_after" value="${s.rate_after||1000}" style="width:80px;padding:5px 8px 5px 20px;font-size:12px;text-align:right" onchange="saveRates()"></div></div></td></tr>
+              <tr style="border-bottom:1px solid var(--g1)"><td style="padding:8px 12px">Weekends / Public Holidays</td><td style="padding:8px 12px;text-align:right"><div style="display:flex;justify-content:flex-end"><div style="position:relative"><span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px">$</span><input type="number" id="r_wknd" value="${s.rate_wknd||1000}" style="width:80px;padding:5px 8px 5px 20px;font-size:12px;text-align:right" onchange="saveRates()"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- XERO -->
+      <div class="scard full">
+        <div class="scard-hdr"><div class="scard-title">Xero Integration</div><div class="scard-sub">AP → Bills · AR → Sales Invoices</div></div>
+        <div class="scard-body">
+          <div style="background:var(--gbg);border:1px solid rgba(26,107,60,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--green)">
+            ✓ Credentials stored in Google Sheets — never exposed in browser
+          </div>
+          <div class="fgr" style="margin-bottom:12px">
+            <div class="fg"><label>Client ID</label><input type="text" id="xCID" placeholder="Xero Client ID" value="${s.xero_client_id||''}" oninput="saveXeroCfg()"></div>
+            <div class="fg"><label>Client Secret</label><input type="password" id="xCS" placeholder="Stored in Google Sheet" oninput="saveXeroCfg()"></div>
+          </div>
+          <div class="fgr" style="margin-bottom:12px">
+            <div class="fg"><label>AP Account Code</label><input type="text" id="xAPAcc" placeholder="479" value="${s.xero_ap_account||'479'}" oninput="saveXeroCfg()"></div>
+            <div class="fg"><label>AR Account Code</label><input type="text" id="xARAcc" placeholder="200" value="${s.xero_ar_account||'200'}" oninput="saveXeroCfg()"></div>
+          </div>
+          <div class="fg" style="margin-bottom:14px"><label>Bookkeeper Email</label><input type="email" id="xBK" placeholder="bookkeeper@example.com" value="${s.xero_bookkeeper||''}" oninput="saveXeroCfg()"></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <button class="btn-primary" onclick="connectXero()">Connect to Xero (OAuth)</button>
+            <div class="xero-status"><div class="dot ${xeroOn?'on':''}"></div><span>${xeroOn?'Connected ✓':'Not connected'}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOGLE SHEETS -->
+      <div class="scard full">
+        <div class="scard-hdr"><div class="scard-title">Google Sheets</div></div>
+        <div class="scard-body">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="xero-status"><div class="dot" id="sheetsDot2"></div><span id="sheetsTxt2">Checking...</span></div>
+            <button class="btn-secondary" onclick="syncNow()">↻ Sync Now</button>
+            <button class="btn-secondary" onclick="initSheets()">⚡ Init Sheets</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">Connected to: <strong>${GS_URL.slice(0,60)}...</strong></div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+
+  // Sync the second sheets dot
+  const d1 = document.getElementById('sheetsDot');
+  const d2 = document.getElementById('sheetsDot2');
+  const t2 = document.getElementById('sheetsTxt2');
+  if (d2 && d1) { d2.className = d1.className; }
+  if (t2) { t2.textContent = document.getElementById('sheetsTxt').textContent; }
+}
+
+// ═══════════════════════════════════════
+// INVOICE MODAL
+// ═══════════════════════════════════════
+function openAddInvoice() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'Add Contractor Invoice';
+  document.getElementById('mContractor').innerHTML = '<option value="">— Select —</option>' + DB.contractors.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('mClient').innerHTML = '<option value="">— Select —</option>' + DB.clients.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('mInvNum').value = '';
+  document.getElementById('mDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('mAP').value = '';
+  document.getElementById('mAR').value = '';
+  document.getElementById('mNotes').value = '';
+  onModalDateChange();
+  document.getElementById('invoiceModal').classList.add('open');
+}
+
+function openEditInvoice(id) {
+  const inv = DB.invoices.find(i => i.id === id);
+  if (!inv) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Invoice';
+  document.getElementById('mContractor').innerHTML = '<option value="">— Select —</option>' + DB.contractors.map(c => `<option value="${c}" ${c===inv.contractor?'selected':''}>${c}</option>`).join('');
+  document.getElementById('mClient').innerHTML = '<option value="">— Select —</option>' + DB.clients.map(c => `<option value="${c}" ${c===inv.client?'selected':''}>${c}</option>`).join('');
+  document.getElementById('mInvNum').value = inv.inv_num || '';
+  document.getElementById('mDate').value = inv.date;
+  document.getElementById('mAP').value = inv.ap || '';
+  document.getElementById('mAR').value = inv.ar || '';
+  document.getElementById('mNotes').value = inv.notes || '';
+  onModalDateChange();
+  document.getElementById('invoiceModal').classList.add('open');
+}
+
+function onModalDateChange() {
+  const date = document.getElementById('mDate').value;
+  if (!date) return;
+  const r = getRate(date);
+  const b = document.getElementById('modalRateBadge');
+  b.style.display = 'flex';
+  b.className = 'rate-badge ' + r.cls;
+  document.getElementById('mRateIcon').textContent = r.icon;
+  document.getElementById('mRateTxt').textContent = r.label + ' — SLA reference rate';
+  document.getElementById('mRateAmt').textContent = '$' + r.rate.toLocaleString('en-AU');
+}
+
+function closeModal() {
+  document.getElementById('invoiceModal').classList.remove('open');
+  editId = null;
+}
+
+async function saveInvoice() {
+  const contractor = document.getElementById('mContractor').value;
+  const client = document.getElementById('mClient').value;
+  const date = document.getElementById('mDate').value;
+  const ap = parseFloat(document.getElementById('mAP').value) || 0;
+  const ar = parseFloat(document.getElementById('mAR').value) || 0;
+  if (!contractor || !client || !date || !ap) { toast('Fill in contractor, client, date and AP amount', 'err'); return; }
+  const rate = getRate(date);
+  const inv = {
+    id: editId || (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    contractor,
+    inv_num: document.getElementById('mInvNum').value.trim(),
+    date,
+    client,
+    ap,
+    ar,
+    notes: document.getElementById('mNotes').value.trim(),
+    rate_label: rate.label,
+    status: 'pending'
+  };
+  if (editId) {
+    await gsPost({ action: 'updateInvoice', id: editId, data: inv });
+    const idx = DB.invoices.findIndex(i => i.id === editId);
+    if (idx > -1) DB.invoices[idx] = normaliseInv(inv);
+    toast('Invoice updated ✓', 'ok');
+  } else {
+    await gsPost({ action: 'saveInvoice', data: inv });
+    DB.invoices.unshift(normaliseInv(inv));
+    toast('Invoice saved ✓', 'ok');
+  }
+  closeModal();
+  renderInbox();
+}
+
+async function deleteInvoice(id) {
+  if (!confirm('Delete this invoice?')) return;
+  await gsPost({ action: 'deleteInvoice', id });
+  DB.invoices = DB.invoices.filter(i => i.id !== id);
+  renderInbox();
+  toast('Deleted');
+}
+
+// ═══════════════════════════════════════
+// XERO PUSH
+// ═══════════════════════════════════════
+async function pushAP() {
+  const wInvs = DB.invoices.filter(i => inWeek(i.date) && i.status === 'pending');
+  if (!wInvs.length) { toast('No pending invoices', 'err'); return; }
+  toast('Pushing AP bills to Xero...');
+  const res = await gsPost({ action: 'pushAPInvoicesToXero', invoiceIds: wInvs.map(i => i.id), weekKey: wkKey() });
+  if (res && res.ok) { toast('AP Bills pushed to Xero ✓', 'ok'); await syncNow(); }
+  else { toast('Push failed: ' + (res && res.error || 'Unknown error'), 'err'); }
+}
+
+async function pushAR() {
+  const wInvs = DB.invoices.filter(i => inWeek(i.date) && i.status === 'pending');
+  if (!wInvs.length) { toast('No pending invoices', 'err'); return; }
+  toast('Pushing AR invoices to Xero...');
+  const res = await gsPost({ action: 'pushARInvoicesToXero', invoiceIds: wInvs.map(i => i.id), weekKey: wkKey() });
+  if (res && res.ok) {
+    DB.locked.push(wkKey());
+    toast('AR Invoices pushed ✓ — week locked', 'ok');
+    await syncNow();
+  } else { toast('Push failed: ' + (res && res.error || 'Unknown error'), 'err'); }
+}
+
+// ═══════════════════════════════════════
+// SETTINGS ACTIONS
+// ═══════════════════════════════════════
+async function savePin(type) {
+  const inp = document.getElementById(type === 'admin' ? 'newAdminPin' : 'newStaffPin');
+  const v = inp.value;
+  if (!v || v.length !== 4 || !/^\d{4}$/.test(v)) { toast('PIN must be 4 digits', 'err'); return; }
+  DB.settings[type === 'admin' ? 'pin_admin' : 'pin_staff'] = v;
+  await gsPost({ action: 'saveSettings', data: { [type === 'admin' ? 'pin_admin' : 'pin_staff']: v } });
+  inp.value = '';
+  toast(type === 'admin' ? 'Admin PIN updated ✓' : 'Staff PIN updated ✓', 'ok');
+  renderSettings();
+}
+
+async function addContractor() {
+  const v = document.getElementById('newContractor').value.trim();
+  if (!v) return;
+  DB.contractors.push(v);
+  await gsPost({ action: 'saveContractors', data: DB.contractors });
+  document.getElementById('newContractor').value = '';
+  toast(v + ' added', 'ok');
+  renderSettings();
+}
+async function deleteContractor(i) {
+  DB.contractors.splice(i, 1);
+  await gsPost({ action: 'saveContractors', data: DB.contractors });
+  renderSettings();
+}
+async function addClient() {
+  const v = document.getElementById('newClient').value.trim();
+  if (!v) return;
+  DB.clients.push(v);
+  await gsPost({ action: 'saveClients', data: DB.clients });
+  document.getElementById('newClient').value = '';
+  toast(v + ' added', 'ok');
+  renderSettings();
+}
+async function deleteClient(i) {
+  DB.clients.splice(i, 1);
+  await gsPost({ action: 'saveClients', data: DB.clients });
+  renderSettings();
+}
+async function saveRates() {
+  const r = {
+    rate_biz: document.getElementById('r_biz').value || 500,
+    rate_after: document.getElementById('r_after').value || 1000,
+    rate_wknd: document.getElementById('r_wknd').value || 1000
+  };
+  Object.assign(DB.settings, r);
+  await gsPost({ action: 'saveSettings', data: r });
+}
+async function saveXeroCfg() {
+  const u = {
+    xero_client_id: document.getElementById('xCID').value || '',
+    xero_client_secret: document.getElementById('xCS').value || '',
+    xero_bookkeeper: document.getElementById('xBK').value || '',
+    xero_ap_account: document.getElementById('xAPAcc').value || '479',
+    xero_ar_account: document.getElementById('xARAcc').value || '200'
+  };
+  Object.assign(DB.settings, u);
+  await gsPost({ action: 'saveSettings', data: u });
+  toast('Xero settings saved', 'ok');
+}
+function connectXero() {
+  const id = (document.getElementById('xCID').value || DB.settings.xero_client_id || '').trim();
+  if (!id) { toast('Enter Client ID first', 'err'); return; }
+  const r = encodeURIComponent(location.href.split('?')[0]);
+  const sc = encodeURIComponent('openid profile email offline_access');
+  const st = Math.random().toString(36).slice(2);
+  localStorage.setItem('xst', st);
+  window.open(`https://login.xero.com/identity/connect/authorize?response_type=code&client_id=${id}&redirect_uri=${r}&scope=${sc}&state=${st}`, '_blank', 'width=620,height=700');
+}
+async function initSheets() {
+  toast('Initialising sheets...');
+  const res = await gsPost({ action: 'initSheetsV6' });
+  if (res && res.ok) { toast('Sheets initialised ✓', 'ok'); await syncNow(); }
+  else { toast('Init failed', 'err'); }
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function shiftWeek(dir) {
+  wkOff += dir;
+  renderCurrentView();
+}
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+async function handleXeroCB() {
+  const p = new URLSearchParams(location.search);
+  const code = p.get('code'), state = p.get('state');
+  if (code && state === localStorage.getItem('xst')) {
+    toast('Connecting to Xero...');
+    const res = await gsPost({ action: 'xeroTokenExchange', code, redirectUri: location.href.split('?')[0] });
+    if (res && res.ok) { setXeroOn(true); toast('Xero connected ✓', 'ok'); }
+    else { toast('Xero connection failed', 'err'); }
+    history.replaceState({}, '', location.pathname);
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+DB.contractors = ['Flametree Medical (Dr David Busby)', 'Erin Smith', 'Mobile Pathology', 'Brigid Larkin'];
+DB.clients = ['Escalante Family', 'Kalinowski', 'Ruddell', 'Colwell', 'Tai Tuivasa', 'Pagano', 'LE Family Group'];
+DB.settings = { rate_biz: '500', rate_after: '1000', rate_wknd: '1000', rate_ph: '1000', pin_admin: DEFAULT_ADMIN_PIN, pin_staff: DEFAULT_STAFF_PIN };
+
+handleXeroCB();
+setTimeout(() => { var p = document.getElementById('pinInput'); if (p) p.focus(); }, 300);
+</script>
+</body>
+</html>
